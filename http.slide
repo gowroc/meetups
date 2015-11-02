@@ -1,0 +1,30 @@
+Simple HTTP API
+G.L.U.G. Wroclaw
+10 Nov 2015
+
+Pawel Kowalak
+pawel.kowalak@gmail.com
+
+* Why Go?
+
+- http package in std lib
+- production ready
+- fast
+- easy deployment
+- concurrency
+
+* Sample Weather API
+
+- GET /weather/:city
+
+  {
+    "temp": 20,
+    "windy": true
+  }
+
+- POST /weather/:city
+
+  {
+    "temp": 18,
+    "windy": false
+  }
