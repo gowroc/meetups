@@ -5,11 +5,11 @@ import (
 )
 
 func main() {
-	done := make(chan bool)
+	done := make(chan bool) // create unbuffered channel of bools
 	go func() {
 		fmt.Println("Hello Wroclaw")
-		done <- true
+		done <- true // send value when job is done
 	}()
 
-	<-done
+	<-done // wait for first message
 }
