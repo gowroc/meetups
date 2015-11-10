@@ -1,0 +1,15 @@
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	done := make(chan bool)
+	go func() {
+		fmt.Println("Hello Wroclaw")
+		done <- true
+	}()
+
+	<-done
+}

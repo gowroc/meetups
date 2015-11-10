@@ -1,0 +1,186 @@
+GO Concurrency Basics
+
+
+Mateusz Dymiński
+@m_dyminski
+github.com/mateuszdyminski
+
+* Agenda
+- Hello World
+- Hello World in goroutine
+- Definitions
+- Example - Pipeline
+- Example - Timeout
+- Example - Google Search Service
+
+* Hello Wroclaw
+
+.play go-concurrency-basics/hello.go
+
+* Hello Wroclaw in Goroutine
+
+.play go-concurrency-basics/hello-goroutine.go
+
+* Hello Wroclaw in Goroutine - WaitGroup
+
+.play go-concurrency-basics/hello-goroutine-2.go
+
+* Hello Wroclaw in Goroutine - Channel
+
+.play go-concurrency-basics/hello-goroutine-3.go
+
+* Hello Wroclaw in Goroutine - No of goroutines
+
+.play go-concurrency-basics/hello-goroutine-4.go
+
+* Hello Wroclaw in Goroutine - No of goroutines
+
+.play go-concurrency-basics/hello-goroutine-5.go
+
+* Goroutine
+
+A goroutine has a simple model: it is a function executing concurrently with other goroutines in the same address space. It is lightweight, costing little more than the allocation of stack space. And the stacks start small, so they are cheap, and grow by allocating (and freeing) heap storage as required.
+
+Goroutines are multiplexed onto multiple OS threads so if one should block, such as while waiting for I/O, others continue to run. Their design hides many of the complexities of thread creation and management.
+
+Prefix a function or method call with the go keyword to run the call in a new goroutine. When the call completes, the goroutine exits, silently. (The effect is similar to the Unix shell's & notation for running a command in the background.)
+
+	go nameOfFunc()
+
+* Golang - thread model M:N (hybrid threading)
+
+.image go-concurrency-basics/threads_model_mn.png 500 _
+
+* Goroutine - Memory consumption
+
+The creation of a goroutine does not require much memory - only 2kB of stack space. They grow by allocating and freeing heap storage as required.
+
+* Goroutine - Setup and teardown costs
+
+Threads have significant setup and teardown costs because it has to request resources from the OS and return it once its done. The workaround to this problem is to maintain a pool of threads. In contrast, goroutines are created and destroyed by the runtime and those operations are pretty cheap. The language doesn't support manual management of goroutines.
+
+* Goroutine - Switching costs
+
+When a thread blocks, another has to be scheduled in its place. Threads are scheduled preemptively, and during a thread switch, the scheduler needs to save/restore ALL registers, that is, 16 general purpose registers, PC (Program Counter), SP (Stack Pointer), segment registers, 16 XMM registers, FP coprocessor state, 16 AVX registers, all MSRs etc. This is quite significant when there is rapid switching between threads.
+
+Goroutines are scheduled cooperatively and when a switch occurs, only 3 registers need to be saved/restored - Program Counter, Stack Pointer and DX. The cost is much lower.
+
+* Goroutine - Blocking
+
+Goroutines are cheap and do not cause the thread on which they are multiplexed to block if they are blocked on
+
+- network input
+- sleeping
+- channel operations or
+- blocking on primitives in the sync package.
+
+Even if tens of thousands of goroutines have been spawned, it's not a waste of system resources if most of them are blocked on one of these since the runtime schedules another goroutine instead.
+
+* Channel
+
+Like maps, channels are allocated with make, and the resulting value acts as a reference to an underlying data structure. If an optional integer parameter is provided, it sets the buffer size for the channel. The default is zero, for an unbuffered or synchronous channel.
+
+	c1 := make(chan int)			// unbuffered channel of ints
+	c1 := make(chan *os.File, 0)	// unbuffered channel of pointers to file
+	c1 := make(chan int, 1024)      // buffered channel of ints
+
+* Channel - example
+
+.play go-concurrency-basics/hello-goroutine-3.go
+
+* Channel - deadlock
+
+.play go-concurrency-basics/deadlock.go
+
+* Channel - buffered
+
+.play go-concurrency-basics/buffered.go
+
+* Select
+
+.play go-concurrency-basics/select.go
+
+* Real life examples
+
+* Pipeline
+
+Goal:
+Calculate sum of doubled elements from list of integers.
+
+Input:
+List of integers
+
+Output:
+Sum of the list
+
+	fmt.Printf("Sum %d \n", sum(double(generate(1, 2, 3, 4, 5))))
+
+* Pipeline - create input
+
+.code go-concurrency-basics/pipeline.go /func generate/,/^}/
+
+* Pipeline - double values
+
+.code go-concurrency-basics/pipeline.go /func double/,/^}/
+
+* Pipeline - sum values
+
+.code go-concurrency-basics/pipeline.go /func sum/,/^}/
+
+* Pipeline - run
+
+.play go-concurrency-basics/pipeline.go /func main/,/^}/
+
+* Timeout
+
+Goal:
+Create HTTP server with search endpoint.
+
+	http://localhost:9000/search?q=golang
+
+Endpoint should call backend server for specified query.
+
+If service don't get response in 100ms will return 'timeout'.
+
+* Timeout - server
+
+.code go-concurrency-basics/timeout.go /func main/,/^}/
+
+.code go-concurrency-basics/timeout.go /func search/,/^}/
+
+* Timeout - search in backend service
+
+.code go-concurrency-basics/timeout.go /func searchTerm/,/^}/
+
+* Timeout - run
+
+.play go-concurrency-basics/timeout.go /func main/,/^}/
+
+* Google Search Service
+
+Goal:
+Create HTTP server with search endpoint.
+
+	http://localhost:9000/search?q=golang
+
+Search should use up to N backend servers.
+
+When user searches for any term HTTP server should make request to N backend servers and returns first response form backend.
+
+* Google Search Service - server
+
+.code go-concurrency-basics/fan-out.go /func main/,/^}/
+
+* Google Search Service - search endpoint
+
+.code go-concurrency-basics/fan-out.go /func searchFor/,/^}/
+
+* Google Search Service - search in specified backend service
+
+.code go-concurrency-basics/fan-out.go /func searchInBackend/,/^}/
+
+* Google Search Service
+
+.play go-concurrency-basics/fan-out.go /func main/,/^}/
+
+* Thank you!
