@@ -12,25 +12,37 @@ import (
 var sleep = 1
 
 func main() {
+	// if there are at least 2 extra args we use it as random sleep time limit
 	if len(os.Args) > 2 {
 		sleep, _ = strconv.Atoi(os.Args[2])
 	}
+	// configure handler
 	http.HandleFunc("/", dummySearch)
+
+	// start http server
 	fmt.Printf("Listening on port %s \n", os.Args[1])
 	http.ListenAndServe(":"+os.Args[1], nil)
 }
 
+// endpoint which will be triggered when user create request for / path
 func dummySearch(w http.ResponseWriter, r *http.Request) {
+	// store current time
 	start := time.Now()
+	// defer will be triggered when execution leaves the func
 	defer func(start time.Time) { fmt.Printf("Query took: %v \n", time.Since(start)) }(start)
 
+	// get argument from query string
 	str := r.URL.Query().Get("q")
 	fmt.Printf("Request for string=%s\n", str)
 
+	// sleep some random time to simulate the real query
 	time.Sleep(time.Millisecond * time.Duration(rand.Intn(sleep)))
+
+	// write result to ResponseWriter
 	fmt.Fprint(w, response)
 }
 
+// dummy response
 var response = `{
 results: [
 {

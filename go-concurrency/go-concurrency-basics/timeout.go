@@ -14,23 +14,28 @@ const (
 )
 
 func main() {
+	// configure http paths
 	http.HandleFunc("/search", search)
+
+	// start http server
 	fmt.Println("Listening on port 9000")
 	http.ListenAndServe(":9000", nil)
 }
 
+// search endpoint
 func search(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query().Get("q")
 	fmt.Printf("Start searching for string '%s'\n", query)
+	start := time.Now()
 
-	result := searchTerm(query)
-
+	// infinite loop
 	for {
 		select {
-		case res := <-result:
+		case res := <-searchTerm(query): // try get result
+			fmt.Printf("Got response in %v.\n", time.Since(start))
 			fmt.Fprint(w, string(res))
 			return
-		case <-time.After(time.Millisecond * Timeout):
+		case <-time.After(time.Millisecond * Timeout): // generate message after 100ms
 			fmt.Printf("Can't get response in %dms. Timeout! \n", Timeout)
 			fmt.Fprint(w, "Timeout!")
 			return
@@ -38,8 +43,11 @@ func search(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// searchTerm makes call to backend service for query results
 func searchTerm(query string) chan []byte {
-	result := make(chan []byte)
+	result := make(chan []byte) // create result chan
+
+	// run new goroutine
 	go func(result chan []byte) {
 		resp, err := http.Get(BackendAPI + query)
 		if err != nil {
@@ -54,5 +62,7 @@ func searchTerm(query string) chan []byte {
 
 		result <- bytes
 	}(result)
+
+	// return result chan immediately (it's empty at that time)
 	return result
 }
