@@ -1,6 +1,6 @@
 Simple HTTP API
 G.L.U.G. Wroclaw
-10 Nov 2015
+8 Dec 2015
 
 Pawel Kowalak
 pawel.kowalak@gmail.com
@@ -28,3 +28,30 @@ pawel.kowalak@gmail.com
     "temp": 18,
     "windy": false
   }
+
+* Simplest HTTP server
+
+.code http/w.go
+
+* ...with error handling
+
+.code http/w1.go
+
+* ...and the first handler
+
+.code http/w2.go
+
+* ...and the first struct
+
+.code http/w3.go
+
+* ...and the first POST
+
+.code http/w4.go
+
+* ...and the proper GET
+
+.code http/w5.go
+
+* ...and everything together
+
