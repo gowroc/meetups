@@ -41,7 +41,7 @@ func searchFor(w http.ResponseWriter, r *http.Request) {
 
 	// get only first result and write answer to response
 	res := <-resultChan
-	fmt.Printf("Got response from server with id: %d\n", res.serverId)
+	fmt.Printf("Got response from server with id: %d\n", res.serverID)
 	fmt.Fprint(w, string(res.payload))
 }
 
@@ -63,6 +63,6 @@ func searchInBackend(id int, query string) response {
 }
 
 type response struct {
-	serverId int
+	serverID int
 	payload  []byte
 }
