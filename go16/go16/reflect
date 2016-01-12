@@ -1,0 +1,5 @@
+f.PkgPath != ""
+
+to exclude inaccessible fields should now use
+
+f.PkgPath != "" && !f.Anonymous

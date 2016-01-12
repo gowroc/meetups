@@ -1,0 +1,5 @@
+go doc http
+
+instead of
+
+go doc net/http

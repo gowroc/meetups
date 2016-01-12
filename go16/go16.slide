@@ -1,0 +1,236 @@
+What's new in Go 1.6
+
+Mateusz Dymiński
+@m_dyminski
+github.com/gowroc/meetups/go16
+
+* Agenda
+- Golang 1.6 Release date
+- Changes to the language
+- Performance
+- Improvements in GC
+- Vendoring
+- Go doc
+- Go vet
+- Core libraries changes - HTTP/2, Runtime, Reflect, Sorting, Templates
+- Minor core libraries changes
+
+* Golang 1.6 Release date
+
+Go 1.6 has NOT yet been released. By regular schedule, it is expected some time in February 2016.
+
+* Changes to the language
+
+There are no language changes in this release.
+
+* Performance
+
+As always, the changes are so general and varied that precise statements about performance are difficult to make. Some programs may run faster, some slower. On average the programs in the Go 1 benchmark suite run a few percent faster in Go 1.6 than they did in Go 1.5. The garbage collector's pauses are even lower than in Go 1.5, although the effect is likely only noticeable for programs using a large amount of memory.
+
+There have been significant optimizations bringing more than 10% improvements to implementations of the compress/bzip2, compress/gzip, crypto/aes, crypto/elliptic, crypto/ecdsa, and sort packages.
+
+source: [https://tip.golang.org/doc/go1.6]
+
+* Improvements in GC
+
+Go 1.6 GC improves in a number of areas:
+
+- State coordination
+- Credit system
+- Mark termination
+- Sweep and scavenge
+
+* Improvements in GC
+
+State coordination: a major bottleneck that Go 1.5 GC has inherited from Go 1.4 is its centralized GC coordinator, which is a single goroutine that further dispatches the work to be done to worker goroutines. One way to fix this is by replacing the centralized coordinator with a decentralized state machine. This change would additionally make it possible to redesign the mark completion barrier, which has grown messy and with bad performance, say Clements and Hudson.
+
+* Improvements in GC
+
+Credit system: Go 1.5 uses a credit system in two different areas: to ensure that sweeping is completed between a GC cycle end and the next heap trigger; and to ensure that scanning is completed between an heap trigger and the subsequent heap goal attainment. One suggested way to improve the credit system is to make it always operate “in the black” to avoid that allocation debt is carried through to the next GC cycle.
+
+* Improvements in GC
+
+Mark termination: the mark termination phase is, according to Clements and Hudson, the main contributor to pause time in Go 1.5. The goal here is to try and ensure that most applications can run under the 10ms threshold that Go 1.5 already attains in many cases. The changes required to this aim fall either in the easy or medium complexity category, such as moving the finalizer scanning from the mark termination phase to the concurrent scan, which should allow to save ~1ms per GB of heap, and removing an expensive count loop, which accounts for the other half of the mark termination phase for large heaps.
+
+* Improvements in GC
+
+Sweep and scavenge: the sweeper is an area where some programs spend significant time, according to Google engineers, and giving some attention to it could bring several performance improvements. A quite radical take to this task would consist in eliminating the sweeper altogether. A less radical approach would aim to free large objects eagerly, at the very end of the GC phase, and to enable the scavenger on all systems, regardless of their physical page size.
+
+* Improvements in GC
+
+.image go16/images/go_gc_16.png 500 _
+
+* Vendoring
+
+Go 1.6 includes support for using local copies of external dependencies to satisfy imports of those dependencies, often referred to as vendoring.
+
+Code below a directory named "vendor" is importable only by code in the directory tree rooted at the parent of "vendor", and only using an import path that omits the prefix up to and including the vendor element.
+
+In Go 1.5, as an experiment, setting the environment variable GO15VENDOREXPERIMENT=1 enabled these features. As of Go 1.6 they are on by default. To turn them off, set GO15VENDOREXPERIMENT=0. In Go 1.7, the environment variable will stop having any effect.
+
+* Vendoring
+
+Here's the example:
+
+.code go16/vendoring
+
+The same visibility rules apply as for internal, but the code in z.go is imported as "baz", not as "foo/vendor/baz".
+
+* Vendoring
+
+Code in vendor directories deeper in the source tree shadows code in higher directories. Within the subtree rooted at foo, an import of "crash/bang" resolves to "foo/vendor/crash/bang", not the top-level "crash/bang".
+
+Code in vendor directories is not subject to import path checking (see 'go help importpath').
+
+When 'go get' checks out or updates a git repository, it now also updates submodules.
+
+Vendor directories do not affect the placement of new repositories being checked out for the first time by 'go get': those are always placed in the main GOPATH, never in a vendor subtree.
+
+See https://golang.org/s/go15vendor for details.
+
+* Go doc
+
+Go 1.5 introduced the go doc command, which allows references to packages using only the package name, as in go doc http. In the event of ambiguity, the Go 1.5 behavior was to use the package with the lexicographically earliest import path. In Go 1.6, ambiguity is resolved by preferring import paths with fewer elements, breaking ties using lexicographic comparison.
+
+.code go16/godoc
+
+* Go vet
+
+The go vet command now diagnoses passing function or method values as arguments to Printf, such as when passing f where f() was intended.
+
+.code go16/govet.go
+
+* Core libraries changes
+
+* HTTP/2
+
+Go 1.6 adds transparent support in the net/http package for the new HTTP/2 protocol. Go clients and servers will automatically use HTTP/2 as appropriate when using HTTPS. There is no exported API specific to details of the HTTP/2 protocol handling, just as there is no exported API specific to HTTP/1.1.
+
+Programs that must disable HTTP/2 can do so by setting Transport.TLSNextProto (for clients) or Server.TLSNextProto (for servers) to a non-nil, empty map.
+
+Programs that must adjust HTTP/2 protocol-specific details can import and use golang.org/x/net/http2, in particular its ConfigureServer and ConfigureTransport functions.
+
+* HTTP/2
+
+.play go16/http2.go /func main/,/^}/
+
+* Runtime - concurrent misuse of maps
+
+The runtime has added lightweight, best-effort detection of concurrent misuse of maps. As always, if one goroutine is writing to a map, no other goroutine should be reading or writing the map concurrently. If the runtime detects this condition, it prints a diagnosis and crashes the program. The best way to find out more about the problem is to run the program under the race detector, which will more reliably identify the race and give more detail.
+
+* Runtime - program-ending panics
+
+For program-ending panics, the runtime now by default prints only the stack of the running goroutine, not all existing goroutines. Usually only the current goroutine is relevant to a panic, so omitting the others significantly reduces irrelevant output in a crash message.
+
+* Reflect
+
+The reflect package has resolved a long-standing incompatibility between embedded unexported struct types containing exported fields.
+
+The problem arises when using reflection to walk through an embedded unexported struct-typed field into an exported field of that struct. In this case, reflect had incorrectly reported the embedded field as exported, by returning an empty Field.PkgPath. Now it correctly reports the field as unexported but ignores that fact when evaluating access to exported fields contained within the struct.
+
+.code go16/reflect
+
+* Sorting
+
+In the sort package, the implementation of Sort has been rewritten to make about 10% fewer calls to the Interface's Less and Swap methods, with a corresponding overall time savings. The new algorithm does choose a different ordering than before for values that compare equal (those pairs for which Less(i, j) and Less(j, i) are false).
+
+Updating: The definition of Sort makes no guarantee about the final order of equal values, but the new behavior may still break programs that expect a specific order. Such programs should either refine their Less implementations to report the desired order or should switch to Stable, which preserves the original input order of equal values.
+
+Stable sorts data while keeping the original order of equal elements.
+
+* Templates - trim spaces
+
+it is now possible to trim spaces around template actions, which can make template definitions more readable. A minus sign at the beginning of an action says to trim space before the action, and a minus sign at the end of an action says to trim space after the action. For example, the template
+
+.code go16/trim
+
+formats as 23<45.
+
+* Templates - block
+
+Second, the new {{block}} action, combined with allowing redefinition of named templates, provides a simple way to define pieces of a template that can be replaced in different instantiations. For example, the template:
+
+.code go16/block
+
+defines the basic formatting of a web page. A program can then overlay that template with new definitions for the "title" and "page" blocks to reuse the formatting for another page.
+
+* Minor core libraries changes 1/14
+
+- In the archive/zip package, the Reader type now has a RegisterDecompressor method, and the Writer type now has a RegisterCompressor method, enabling control over compression options for individual zip files. These take precedence over the pre-existing global RegisterDecompressor and RegisterCompressor functions.
+- The bufio package's Scanner type now has a Buffer method, to specify an initial buffer and maximum buffer size to use during scanning. This makes it possible, when needed, to scan tokens larger than MaxScanTokenSize. Also for the Scanner, the package now defines the ErrFinalToken error value, for use by split functions to abort processing or to return a final empty token.
+- The compress/flate package has deprecated its ReadError and WriteError error implementations. In Go 1.5 they were only rarely returned when an error was encountered; now they are never returned, although they remain defined for compatibility.
+
+* Minor core libraries changes 2/14
+
+- The compress/flate, compress/gzip, and compress/zlib packages now report io.ErrUnexpectedEOF for truncated input streams, instead of io.EOF.
+- The crypto/cipher package now overwrites the destination buffer in the event of a GCM decryption failure. This is to allow the AESNI code to avoid using a temporary buffer.
+- The crypto/tls package has a variety of minor changes. It now allows Listen to succeed when the Config has a nil Certificates, as long as the GetCertificate callback is set, it adds support for RSA with AES-GCM cipher suites, and it adds a RecordHeaderError to allow clients (in particular, the net/http package) to report a better error when attempting a TLS connection to a non-TLS server.
+
+* Minor core libraries changes 3/14
+
+- The crypto/x509 package now permits certificates to contain negative serial numbers (technically an error, but unfortunately common in practice), and it defines a new InsecureAlgorithmError to give a better error message when rejecting a certificate signed with an insecure algorithm like MD5.
+- The debug/dwarf and debug/elf packages together add support for compressed DWARF sections. User code needs no updating: the sections are decompressed automatically when read.
+- The debug/elf package adds support for general compressed ELF sections. User code needs no updating: the sections are decompressed automatically when read. However, compressed Section's do not support random access: they have a nil ReaderAt field.
+
+* Minor core libraries changes 4/14
+
+- The encoding/asn1 package now exports tag and class constants useful for advanced parsing of ASN.1 structures.
+- Also in the encoding/asn1 package, Unmarshal now rejects various non-standard integer and length encodings.
+- The encoding/base64 package's Decoder has been fixed to process the final bytes of its input. Previously it processed as many four-byte tokens as possible but ignore the remainder, up to three bytes. The Decoder therefore now handles inputs in unpadded encodings (like RawURLEncoding) correctly, but it also rejects inputs in padded encodings that are truncated or end with invalid bytes, such as trailing spaces.
+
+* Minor core libraries changes 5/14
+
+- The encoding/json package now checks the syntax of a Number before marshaling it, requiring that it conforms to the JSON specification for numeric values. As in previous releases, the zero Number (an empty string) is marshaled as a literal 0 (zero).
+- The encoding/xml package's Marshal function now supports a cdata attribute, such as chardata but encoding its argument in one or more <![CDATA[ ... ]]> tags.
+- Also in the encoding/xml package, Decoder's Token method now reports an error when encountering EOF before seeing all open tags closed, consistent with its general requirement that tags in the input be properly matched. To avoid that requirement, use RawToken.
+
+* Minor core libraries changes 6/14
+
+- The fmt package now allows any integer type as an argument to Printf's * width and precision specification. In previous releases, the argument to * was required to have type int.
+- Also in the fmt package, Scanf can now scan hexadecimal strings using %X, as an alias for %x. Both formats accept any mix of upper- and lower-case hexadecimal. TODO: Keep?
+- The image and The image/color packages add NYCbCrA and NYCbCrA types, to support Y'CbCr images with non-premultiplied alpha.
+- The io package's MultiWriter implementation now implements a WriteString method, for use by WriteString.
+
+* Minor core libraries changes 7/14
+
+- In the math/big package, Int adds Append and Text methods to give more control over printing.
+- Also in the math/big package, Float now implements encoding.TextMarshaler and encoding.TextUnmarshaler, allowing it to be serialized in a natural form by the encoding/json and encoding/xml packages.
+- Also in the math/big package, Float's Append method now supports the special precision argument -1. As in strconv.ParseFloat, precision -1 means to use the smallest number of digits necessary such that Parse reading the result into a Float of the same precision will yield the original value.
+- The math/rand package adds a Read function, and likewise Rand adds a Read method. These make it easier to generate pseudorandom test data. Note that, like the rest of the package, these should not be used in cryptographic settings; for such purposes, use the crypto/rand package instead.
+
+* Minor core libraries changes 8/14
+
+- The net package's ParseMAC function now accepts 20-byte IP-over-InfiniBand (IPoIB) link-layer addresses.
+- Also in the net package, there have been a few changes to DNS lookups. First, the DNSError error implementation now implements Error, and in particular its new IsTemporary method returns true for DNS server errors. Second, DNS lookup functions such as LookupAddr now return rooted domain names (with a trailing dot) on Plan 9 and Windows, to match the behavior of Go on Unix systems. TODO: Third, lookups satisfied from /etc/hosts now add a trailing dot as well, so that looking up 127.0.0.1 typically now returns “localhost.” not “localhost”. This is arguably a mistake but is not yet fixed. See https://golang.org/issue/13564.
+
+* Minor core libraries changes 9/14
+
+- The net/http package has a number of minor additions beyond the HTTP/2 support already discussed. First, the FileServer now sorts its generated directory listings by file name. Second, the Client now allows user code to set the Expect: 100-continue header (see Transport.ExpectContinueTimeout). Third, there are four new error codes from RFC 6585: StatusPreconditionRequired (428), StatusTooManyRequests (429), StatusRequestHeaderFieldsTooLarge (431), and StatusNetworkAuthenticationRequired (511). Fourth, the implementation and documentation of CloseNotifier has been substantially changed. The Hijacker interface now works correctly on connections that have previously been used with CloseNotifier. The documentation now describes when CloseNotifier is expected to work.
+- The net/http/httptest package's ResponseRecorder now initializes a default Content-Type header using the same content-sniffing algorithm as in http.Server.
+
+* Minor core libraries changes 10/14
+
+- Also in the net/http package, there are a few changes related to the handling of a Request data structure with its Method field set to the empty string. An empty Method field has always been documented as an alias for "GET" and it remains so. However, Go 1.6 fixes a few routines that did not treat an empty Method the same as an explicit "GET". Most notably, in previous releases Client followed redirects only with Method set explicitly to "GET"; in Go 1.6 Client also follows redirects for the empty Method. Finally, NewRequest accepts a method argument that has not been documented as allowed to be empty. In past releases, passing an empty method argument resulted in a Request with an empty Method field. In Go 1.6, the resulting Request always has an initialized Method field: if its argument is an empty string, NewRequest sets the Method field in the returned Request to "GET".
+- The net/url package's Parse is now stricter and more spec-compliant regarding the parsing of host names. For example, spaces in the host name are no longer accepted.
+- Also in the net/url package, the Error type now implements net.Error.
+
+* Minor core libraries changes 11/14
+
+- The os package's IsExist, IsNotExist, and IsPermission now return correct results when inquiring about an SyscallError.
+- On Unix-like systems, when a write to os.Stdout or os.Stderr (more precisely, an os.File opened for file descriptor 1 or 2) fails due to a broken pipe error, the program will raise a SIGPIPE signal. By default this will cause the program to exit; this may be changed by calling the os/signal Notify function for syscall.SIGPIPE. A write to a broken pipe on a file descriptor other 1 or 2 will simply return syscall.EPIPE (possibly wrapped in os.PathError and/or os.SyscallError) to the caller. The old behavior of raising an uncatchable SIGPIPE signal after 10 consecutive writes to a broken pipe no longer occurs.
+- In the os/exec package, Cmd's Output method continues to return an ExitError when a command exits with an unsuccessful status. If standard error would otherwise have been discarded, the returned ExitError now holds a prefix (currently 32 kB) of the failed command's standard error output, for debugging or for inclusion in error messages. The ExitError's String method does not show the captured standard error; programs must retrieve it from the data structure separately.
+
+* Minor core libraries changes 12/14
+
+- On Windows, the path/filepath package's Join function now correctly handles the case when the base is a relative drive path. For example, Join(`c:`, `a`) now returns `c:a` instead of `c:\a` as in past releases. This may affect code that expects the incorrect result.
+- In the regexp package, the Regexp type has always been safe for use by concurrent goroutines. It uses a sync.Mutex to protect a cache of scratch spaces used during regular expression searches. Some high-concurrency servers using the same Regexp from many goroutines have seen degraded performance due to contention on that mutex. To help such servers, Regexp now has a Copy method, which makes a copy of a Regexp that shares most of the structure of the original but has its own scratch space cache. Two goroutines can use different copies of a Regexp without mutex contention. A copy does have additional space overhead, so Copy should only be used when contention has been observed.
+
+* Minor core libraries changes 13/14
+
+- The strconv package adds IsGraphic, QuoteToGraphic, QuoteRuneToGraphic, AppendQuoteToGraphic, and AppendQuoteRuneToGraphic, analogous to IsPrint, QuoteToPrint, and so on. The Print family escapes all space characters except ASCII space (U+0020). In contrast, the Graphic family does not escape any Unicode space characters (category Zs).
+- In the testing package, when a test calls t.Parallel, that test is paused until all non-parallel tests complete, and then that test continues execution with all other parallel tests. Go 1.6 changes the time reported for such a test: previously the time counted only the parallel execution, but now it also counts the time from the start of testing until the call to t.Parallel.
+
+* Minor core libraries changes 14/14
+
+- The time package's Parse function has always rejected any day of month larger than 31, such as January 32. In Go 1.6, Parse now also rejects February 29 in non-leap years, February 30, February 31, April 31, June 31, September 31, and November 31.
+- The text/template package contains two minor changes, in addition to the major changes described above. First, it adds a new ExecError type returned for any error during Execute that does not originate in a Write to the underlying writer. Callers can distinguish template usage errors from I/O errors by checking for ExecError. Second, the Funcs method now checks that the names used as keys in the FuncMap are identifiers that can appear in a template function invocation. If not, Funcs panics.

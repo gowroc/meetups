@@ -1,0 +1,4 @@
+<title>{{block "title"}}Page Title{{end}}</title>
+<body>
+<h1>{{template "title"}}</h1>
+{{block "page"}}Main text{{end}}
