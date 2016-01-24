@@ -1,0 +1,57 @@
+Scheduling
+When does Go runtime switch goroutines?
+12 Jan 2016
+
+Grzegorz Żur
+grzegorz.zur@gmail.com
+
+* Let's break Go!
+By definition, a program written in Go language ends when function main from package main ends, but this one does not!
+
+.play scheduling/no_preemption.go
+
+* Operating system scheduling
+- switches processes or threads
+- from the outside
+- preemptive
+- must be fair
+- must prevent starvation
+- must prevent dead locks
+
+* Go runtime scheduling
+- cooperative
+- from the inside
+- allows starvation (as seen above)
+- maintains a list of runnable goroutines and picks one
+- detects deadlocks (when the list is empty, non-blocking IO helps)
+
+* When does Go switch goroutines?
+- on channel operation when channel is empty or full
+- on system call so the goroutine does not block execution thread (NodeJS)
+- on allocation
+- explicitly
+
+[[https://golang.org/src/runtime/proc1.go?h=schedule][]]
+
+* On channel operation
+.play scheduling/on_channel.go
+
+* On system call
+.play scheduling/on_syscall.go
+
+* On allocation
+.play scheduling/on_allocation.go
+
+* Explicitly
+.play scheduling/explicitly.go
+
+* Future
+This behaviour of Go is a subject to change.
+
+Issue for preemptive scheduling [[https://github.com/golang/go/issues/543][#543]] is not planned.
+
+* What do I need it for?
+- You don't really need it because it is very hard to write a loop without a system call.
+- This explains how Go runtime works.
+- This explains how Go runtime makes the code run efficently.
+- This explains some unresponsive Go code.
