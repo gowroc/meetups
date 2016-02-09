@@ -1,0 +1,43 @@
+Gomobile
+G.L.U.G. Wroclaw
+9 Feb 2016
+
+Pawel Kowalak
+pawel.kowalak@gmail.com
+
+* What's possible
+
+- Android and iOS platforms supported
+- SDK apps vs native apps
+- GLES 2 for native approach
+- App control, assets, events
+
+* Getting Started
+
+Install and initialize `gomobile`:
+
+  $ go get golang.org/x/mobile/cmd/gomobile
+  $ gomobile init
+
+* Local Development
+
+It's possible to build and run apps on PC:
+
+  $ go install golang.org/x/mobile/example/flappy
+  $ flappy
+
+* Android Support
+
+Building APK for Android:
+
+  $ gomobile build -target android golang.org/x/mobile/example/flappy
+  $ gomobile install golang.org/x/mobile/example/flappy
+
+* iOS Support
+
+Building APP for iOS:
+
+  $ gomobile build -target ios golang.org/x/mobile/example/flappy
+  $ ios-deploy -b flappy.app
+
+[[https://github.com/phonegap/ios-deploy]]
