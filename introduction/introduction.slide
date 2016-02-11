@@ -1,0 +1,77 @@
+Introduction to Go
+
+Grzegorz Żur
+grzegorz.zur@gmail.com
+
+* Why?
+- no new language
+- concurrency
+- simplicity
+- productivity
+- quick compilation
+- dependency management
+- no IDE
+
+* History
+- 2007 started by Robert Griesemer, Rob Pike, Ken Thompson in Google
+- 2009 publicly available
+- 2012 version 1.0 released
+- 2015 version 1.5 released (Go + assembler)
+- 2016 version 1.6 released (HTTP/2)
+- separate project on Github
+- hundreds of authors including Canonical, Red Hat, IBM, Oracle...
+- design documents also available on GitHub
+
+* What?
+- C-like syntax
+- garbage collected
+- simple static typing
+- values and pointers
+- structures and interfaces
+- first class functions, methods and closures
+- implements Communicating Sequential Processes (Erlang, Occam)
+
+* What?
+- natively compiled code
+- statically compiled code utilizing system calls
+- libraries distributed as source code
+- useful standard library
+- tooling included: compiling, formatting, testing, coverage, benchmarking, documentation, profiling, tracing, downloading code
+- BSD licence
+- [[https://play.golang.org/][Playground!]]
+
+* No!
+- type hierarchy or inheritance
+- generic types
+- exceptions
+- overloading
+- tunning knobs
+
+* Concurrency Example
+.image introduction/concurrency.svg
+
+* Concurrent Functions
+.code introduction/concurrency.go /^func produce/,/^}/
+.code introduction/concurrency.go /^func inc/,/^}/
+.code introduction/concurrency.go /^func consume/,/^}/
+
+* Concurrency Program
+.play introduction/concurrency.go /^func main/,/^}/
+
+* Web Template
+.code introduction/web.html
+
+* Web Server
+.code introduction/web.go
+
+* Learn
+.link http://meetup.com/GoLang-User-Group-Wroclaw/
+.link https://github.com/a8m/go-lang-cheat-sheet
+.link https://golang.org/doc/
+
+* Write some code
+
+"Any program is only as good as it is useful."
+Linus Torvalds
+
+.link https://github.com/grzegorz-zur/hrw
