@@ -1,0 +1,172 @@
+Fabio - A modern consul-aware HTTP routing load-balancer
+
+Mateusz Dymiński
+@m_dyminski
+github.com/gowroc/meetups/consul-fabio
+github.com/mateuszdyminski/consul
+
+* Agenda
+
+- Consul
+- Consul - demo
+- Fabio
+- Fabio - demo
+
+* Consul - overview
+
+- Written in GO by HashiCorp
+- Based on Raft algorithm
+- Uses Gossip protocol
+
+* Consul - alternatives
+
+- Zookeeper
+- Etcd
+- Doozerd
+- SkyDNS
+- Nagios
+- Sensu
+
+* Consul - features
+
+*Service* *Discovery:* Clients of Consul can provide a service, such as api or mysql, and other clients can use Consul to discover providers of a given service. Using either DNS or HTTP, applications can easily find the services they depend upon.
+
+*Health* *Checking:* Consul clients can provide any number of health checks, either associated with a given service ("is the webserver returning 200 OK"), or with the local node ("is memory utilization below 90%"). This information can be used by an operator to monitor cluster health, and it is used by the service discovery components to route traffic away from unhealthy hosts.
+
+* Consul
+
+*Key/Value* *Store:* Applications can make use of Consul's hierarchical key/value store for any number of purposes, including dynamic configuration, feature flagging, coordination, leader election, and more. The simple HTTP API makes it easy to use.
+
+*Multi* *Datacenter:* Consul supports multiple datacenters out of the box. This means users of Consul do not have to worry about building additional layers of abstraction to grow to multiple regions.
+
+_Source:_ _https://www.consul.io/_
+
+* Consul simple server
+
+To run simple local consul cluster
+.play consul-fabio/start-consul.sh
+
+* Consul demo - service
+
+.code consul-fabio/service-registration.go /func startHttp/,/^}/
+
+* Consul demo - registration
+
+.code consul-fabio/service-registration.go /func registerService/,/^}/
+
+* Consul demo - main
+
+.play consul-fabio/service-registration.go /func main/,/^}/
+
+* Consul demo - DNS query interface
+
+.play consul-fabio/dns-query.sh
+
+* Consul demo - Key Value storage
+
+Set value in Consul KV storage
+.play consul-fabio/key-value-put.sh
+
+
+Get value from Consul KV storage
+.play consul-fabio/key-value-get.sh
+
+* Consul demo - Distributed locking
+
+.play consul-fabio/dist-locking.sh
+
+* Fabio
+
+Fabio is a fast, modern, zero-conf load balancing HTTP(S) router for deploying microservices managed by consul.
+
+Fabio was developed at the eBay Classifieds Group in Amsterdam and routes in total roughly 15.000 req/sec for the following sites without any measurable latency impact.
+
+- marktplaats.nl
+- admarkt.marktplaats.nl
+- topannoncer.dbabusiness.dk
+- cas.kijiji.ca
+- kijiji.ij
+
+* Fabio
+
+- Single binary in Go. No external dependencies.
+- Based on Consul
+- Zero-conf
+- Hot-reloading of routing table through backend watchers
+- Round robin and random distribution
+- Traffic Shaping
+- Graphite metrics
+- Request tracing
+- WebUI
+
+_source:_ _https://github.com/eBay/fabio_
+
+* Fabio - performance
+
+Fabio has been tested to deliver up to 15.000 req/sec on a single 16 core host with moderate memory requirements (~ 60 MB).
+
+* Fabio - installation
+
+Installation:
+
+	GO15VENDOREXPERIMENT=1 go get github.com/eBay/fabio
+
+Run:
+
+	./fabio
+
+Or:
+
+	./fabio -cfg fabio.properties
+
+* Fabio - configuration
+
+Each service can register one or more URL prefixes for which it serves traffic. A URL prefix is a host/path combination without a scheme since SSL has already been terminated and all traffic is expected to be HTTP. To register a URL prefix add a tag urlprefix-host/path to the service definition.
+
+By default, traffic is distributed evenly across all service instances which register a URL prefix but you can set the amount of traffic a set of instances will receive ("Canary testing").
+
+A background process watches for service definition and health status changes in consul. When a change is detected a new routing table is constructed using the commands described in Config Commands.
+
+* Fabio - configuration
+
+.code consul-fabio/fabio-worker.go /START OMIT/,/END OMIT/
+
+* Fabio - run cluster
+
+Clone and follow the README
+
+	git clone https://github.com/mateuszdyminski/consul
+
+Requirements:
+- Vagrant
+- Ansible
+
+* Fabio - Demo time!
+
+* Fabio - Routing Table
+
+- Add new routing
+
+	route add <svc> <src> <dst> weight <w> tags "<t1>,<t2>,..."
+
+	example
+
+	route add ap01 /foo2 http://192.168.56.102:9000/foo
+
+- Delete routing
+
+	route del <svc> <src> <dst>
+
+	example
+
+	route del ap01 /foo2
+
+- Change weight
+
+	route weight <svc> <src> weight <w> tags "<t1>,<t2>,..."
+
+* Fabio - Traffic shaping
+
+To create the weight for specified endpoint
+
+	route weight ap01 /foo weight 0.05
