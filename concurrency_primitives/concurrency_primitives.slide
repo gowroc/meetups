@@ -1,0 +1,117 @@
+Concurrency primitives
+Building blocks of concurrent programs
+
+Grzegorz Żur
+grzegorz.zur@gmail.com
+
+* Concurrency
+- property of a program
+- 'dealing with multiple things at once'
+- software runs concurrently on single CPU
+
+* Parallelism
+- property of a process
+- 'doing multiple things at once'
+- things happens simultanously
+- you need a multi-CPU system
+
+* Concurrency and Parallelism
+We write concurrent programs so they can run efficiently on parallel hardware.
+
+Concurrency enables parallelism, but it does not require it.
+
+JavaScript programs run concurrently but not in parallel (forget about workers). Therefore it does not need to synchronize or communicate. Changing global state is good enough.
+
+.link https://youtube.com/watch?v=cN_DpYBzKso Concurrency is not Parallelism by Rob Pike
+
+* Time-sharing
+In order to increase computer throughput, time-sharing systems where developed. They can run multiple programs at once.
+
+Running program often waits for I/O (disk, network), CPU can execute other program in the meantime.
+
+* Processes
+- separate memory
+- preemptively scheduled by operating system (expensive)
+- communicates through shared memory pages, sockets, files (expensive)
+
+* Threads
+- shared memory
+- preemptively scheduled by operating system (expensive)
+- communicates through shared memory (cheap)
+
+* Coroutines
+- shared memory
+- cooperativly scheduled by runtime (cheap)
+- communicates through shared memory (cheap)
+
+* Event machines
+- shared memory
+- one process runs all event handlers (cheap)
+- communicates through shared memory (cheap)
+- no blocking possible - otherwise deadlock would occur
+- using callbacks is a must (painfull)
+
+* Goroutines
+- shared memory
+- cooperatively scheduled by runtime (cheap)
+- communicates through channels (cheap)
+- routines executed by a pool of threads (= # of CPUs)
+- blocking operations makes other goroutine run (easy)
+
+* Running concurrently
+.play concurrency_primitives/concurrent.go
+
+* Synchronization approaches
+- nothing - event machines, JavaScript
+- atomic operations - CMPXCHG, CPU support
+- semaphores - C, OS support
+- monitors - Ada, Java, language support
+- more elaborate things build on this: read-write locks, n-semaphores, etc...
+- communicating by sharing memory
+
+* Communicating Sequential Processes
+- idea by C.A.R. Hoare first described in seventies
+- language for description of concurrent systems
+- model for concurrent systems
+- procedures communicates through synchronous channels
+- inspiration for goroutines and channels
+- share by communicating
+- Go takes this approach (Limbo by Rob Pike et al.)
+
+* Channels
+.play concurrency_primitives/channels.go
+
+* Buffered channels
+.play concurrency_primitives/buffered_channels.go
+
+* Synchronization
+There is an enormous difference between unbuffered and buffered channels. Reading and writing to unbuffered channels are blocking operations.
+
+Think of unbuffered channels as channels with capacity of 0.
+
+This can be used to synchronize code.
+
+* Synchronization
+.play concurrency_primitives/synchronization.go
+
+* Mulitway communication
+In Go we have ability to communicate with multiple goroutines at once.
+
+* Select
+.play concurrency_primitives/select.go /^func main/,/^}/
+
+* Advanced select
+.play concurrency_primitives/advanced_select.go /^func main/,/^}/
+
+* Deadlock
+Deadlock detection is a nice side effect of scheduling goroutines by runtime. If you have no goroutine ready to run or waiting on I/O, then you have a deadlock. Therefore it is always on.
+
+.play concurrency_primitives/deadlock.go
+
+* Race condition
+Race condition detection must be turned on manually. It is expensive so it is off.
+
+.play concurrency_primitives/race.go
+
+* Race condition and maps
+.play concurrency_primitives/race_maps.go
