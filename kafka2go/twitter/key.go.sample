@@ -1,0 +1,8 @@
+package twitter
+
+var (
+	// Key is a consumer key for this application
+	Key = "Twitter-Key"
+	// Secret is a consumer secret for this application
+	Secret = "Twitter-Secret"
+)
