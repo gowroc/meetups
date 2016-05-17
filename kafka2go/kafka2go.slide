@@ -1,0 +1,95 @@
+Kafka To Go
+G.L.U.G. Wroclaw
+10 May 2016
+
+Pawel Słomka
+pslomka@pslomka.com
+http://mycodesmells.com
+
+* Agenda
+
+- What is Kafka?
+- Does Kafka go with Go?
+- Why Kafka?
+- Libraries to use
+- Examples
+- Lessons learned
+
+* What is Kafka?
+
+.image img/kafka.png 200 _
+
+Apache Kafka is publish-subscribe messaging rethought as a distributed commit log.
+
+Main characteristics:
+
+- Every message is persisted to the disk
+- Fast to start working with (despite being large itself)
+- Well-developed clients (Go and less significant languages)
+
+* Does Kafka go with Go?
+
+Absolutely!
+
+If you are still looking for use case to create your Go-based system, using Kafka can be the first step to get you there.
+
+Why?
+
+- Go is perfect language for microservices
+- Kafka is simple enough to set up communication between Go apps
+- Microservices are the future (for some time now, but still)
+
+So you are doomed to succeed with Go + Kafka.
+
+* Why Kafka is perfect for your microservices?
+
+One service should do one thing, but some tasks take longer than the other.
+
+With Kafka, everyone works at their own pace, so that services don't have to wait for others to finish.
+
+If a worker is constantly too slow, it's easy to create multiple instances and have Kafka deal with work distibution. 
+
+And if you did, you just started scaling your system!
+
+* Terminology
+
+- ZooKeeper - a tool shipped with Kafka responsible for keeping information about which message has been read (eg. for a smooth post-crash recovery)
+- *producer* sends a *message*
+- *Kafka* *broker* receives it and saves it to the disk
+- *consumer* *group* (that consists of one or more *consumer*) receives the message (_consumes_ it) - one of the members gets lucky and starts working
+- once the consumption is finished, a consumer can commit a *message* *offset* to ZooKeeper to notify that a message is processed
+
+* Libraries to use
+
+- *Shopify/sarama* ([[https://github.com/Shopify/sarama][GitHub]])
+
+It has almost everything you need to get started with Kafka: message structs, constructors for producers and consumers, etc.
+
+- *wvanbergen/kafka* ([[https://github.com/wvanbergen/kafka][GitHub]])
+
+It is built on top of sarama (so it's on a slightly higher level), and provides an important feature of consumer groups with message offset commits.
+
+* Live demo
+
+* Lessons learned
+
+Few good-to-knows after a 9-month project:
+
+- Create your topics beforehand
+# If a consumer starts first, it'll be unable to work 
+- Log everything, eveywhere
+# Will save your time in case of an error
+- Make sure your service restarts after crash
+# So that the whole system stays up 
+- Don't forget about committing the offset
+# Of you'll be reprocessing all messages after restart
+- Kill your service if Kafka is not available
+# React quickly if the environment is not working
+- Have a common way of initialization your services
+# Less likely to have errors if you do it the same way every time
+
+* Links
+
+- [[http://http://kafka.apache.org/][Kafka - Official website]]
+- [[http://mycodesmells.com/post/introduction-to-apache-kafka/][Blog post - Introduction to Apache Kafka]]
+- [[http://mycodesmells.com/post/kafka-to-go/][Blog post - Kafka To Go]]
