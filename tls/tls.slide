@@ -1,0 +1,70 @@
+Let's Encrypt Go
+How to use Let's Encrypt with Go
+
+Grzegorz Żur
+grzegorz.zur@gmail.com
+
+* Motivation
+
+- Go 1.6 introduces HTTP/2
+- HTTP/2 requires TLS
+- TLS requires certificates
+- certificates must be signed by authority
+
+* Setup
+
+- domain in control
+- GNU/Linux server
+- domain pointing to the server
+
+* Code
+
+.code tls/server.go
+
+* Procedure
+
+- checking if we control domain (for each)
+- generating certificate
+- signing certificate by authority
+- configuring server
+
+* Check modes
+
+- standalone
+- manual
+
+* Generation
+ 
+ git clone https://github.com/letsencrypt/letsencrypt
+ cd letsencrypt
+ ./letsencrypt-auto certonly --standalone -d test.gzapps.com -d www.test.gzapps.com
+
+* Running
+
+ ./tls 443 cert.pem key.pem
+
+* Check
+
+.link https://ssllabs.com/ssltest/analyze.html?d=test.gzapps.com
+
+* Non-privlieged user
+
+We should run the program as non-priviliged user but we need to listen on privileged port 443 (and 80).
+
+ setcap 'cap_net_bind_service=+ep' tls
+
+* Pros & cons
+
+- enables HTTP/2
+- easy
+- automatic
+- recognized by browsers 
+- certificate is valid for 3 months only
+- automatic renewal
+
+* More
+
+.link https://letsencrypt.org/
+.link https://www.ssllabs.com/ssltest/
+
+

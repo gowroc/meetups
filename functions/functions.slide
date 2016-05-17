@@ -1,0 +1,91 @@
+Functions
+Innovations delivered in Go
+
+Grzegorz Żur
+grzegorz.zur@gmail.com
+
+* Main
+
+Go simplifies the main function in comparison to other languages and puts argument values into variable of the os package.
+
+.play functions/main.go
+
+* End
+
+Go program ends when main function ends. All running goroutines are stopped.
+
+Except when you call os.Exit explicitly.
+
+.play functions/end.go
+
+* Calling
+Go introduces innovative ways to call functions. We can make function run concurrently or at the very end of executing function.
+
+* Go
+Using go keyword you can make run function concurrently. Return values are not available.
+
+.play functions/concurrent.go
+
+* Defer
+
+Defer keyword evaluates function parameters and puts a function call on a stack. At the exit from a function the stacked calls are executed in reverse order. 
+
+.play functions/defer.go
+
+* Panic
+
+Panic happens, but deferred function still runs.
+
+.play functions/panic.go
+
+* Panic handling
+
+Deferred function can even make the program calm down.
+
+.play functions/panic_handling.go
+
+* Resources
+
+Defer allows freeing resources without increasing function complexity.
+
+.play functions/resources.go
+
+* Wait Group
+
+Clean up first, play later carelessly.
+
+.play functions/wait_group.go
+
+* Multiple return values 
+
+Functions can return multiple values.
+
+.play functions/multiple_return_values.go
+
+* Named return values
+
+It is a little awkward feature.
+
+.play functions/named_return_values.go
+
+* Function types
+
+Functions are first class objects.
+
+.play functions/first_class.go
+
+* Methods
+Methods are functions with a receiver being just another parameter.
+The reflected type of the function proves it.
+
+.play functions/methods_signature.go /START OMIT/,/END OMIT/
+
+This is the key to the understanding of receivers. When in doubt, use pointer receiver.
+
+* Closures
+
+.play functions/closure.go
+
+* Escape analysis
+
+.play functions/closure_stack.go
