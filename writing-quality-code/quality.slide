@@ -1,0 +1,157 @@
+Writing Quality Code
+G.L.U.G. Wroclaw
+9 Jun 2016
+
+Pawel Kowalak
+Siili Solutions
+pawel.kowalak@gmail.com
+
+* How to Measure Code Quality?
+.image img/wtf.jpg
+
+* What Makes a Good Quality Code?
+
+"A good coder writes code that looks like it was easy and straightforward to do."
+.caption Random quote from the Internet
+
+General topics:
+
+- DRY
+- Short functions (1-2 screens, 5-10 local vars)
+- Good names
+- Organized structure
+- Easily testable
+- Good comments
+
+* Don't Repeat Yourself
+
+"Every piece of knowledge must have a single, unambiguous, authoritative representation within a system."
+.caption [[https://en.wikipedia.org/wiki/The_Pragmatic_Programmer][_The_Pragmatic_Programmer_]]
+
+Common DRY problem in Go: repetitive errors checking
+
+* Errors Checking in HTTP Handlers
+.code dry/dry-err.go /func viewRecord/,/^}/
+.code dry/dry-err.go /func viewRecord2/,/^}/
+
+* Errors Checking in HTTP Handlers
+.code dry/dry-err.go /type appHandler/
+.code dry/dry-err.go /func \(fn appHandler\) ServeHTTP/,/^}/
+.code dry/dry-err.go /func main/,/^}/
+
+* Repetitive Errors Checking
+.code dry/dry-err2.go /func write/,/^}/
+
+* Repetitive Errors Checking
+.code dry/dry-err2.go /type errWriter/,/^}/
+.code dry/dry-err2.go /func \(ew \*errWriter\) write/,/^}/
+.code dry/dry-err2.go /func write2/,/^}/
+
+* Repetitive Errors Checking
+.code dry/dry-err2.go /func scan/,/^}/
+
+#* Short functions
+
+#"[Functions] should fit on one or two screenfuls of text (the ISO/ANSI screen size is 80x24, as we all know), and do one thing and do that well."
+
+#.caption [[https://www.kernel.org/doc/Documentation/CodingStyle][_Linux_kernel_coding_style_]]
+
+* Naming
+
+"[T]he further from its declaration that a name is used, the more descriptive the name must be."
+.caption [[https://github.com/golang/go/wiki/CodeReviewComments][_Code_Review_Comments_]]
+
+- Receiver name
+.code names/names.go /func \(s \*Service\) Close/,/^}/
+
+- Getters and setters
+.code names/names.go /func \(s \*Service\) User/
+.code names/names.go /func \(s \*Service\) Users/
+.code names/names.go /func \(s \*Service\) SetUser/
+
+* Organized Structure (User-level)
+
+$GOPATH mess
+
+- GOPATH per project
+- GOPATH=$HOME
+- GOPATH=$HOME/go/external:$HOME/go/internal
+
+But always do `PATH=$GOPATH/bin:$PATH`
+
+You don't need other $GOvariables 99% of the times.
+
+* Organized Structure (Repo-level)
+
+Private projects: do whatever you want
+
+Open-source projects:
+
+- is it binary?
+
+  github.com/user/foo
+    main.go
+    main_test.go
+    lib/
+      foo.go
+      foo_test.go
+
+- is it library?
+
+  github.com/user/foo
+    foo.go
+    foo_test.go
+    cmd/
+      foo/
+        main.go
+        main_test.go
+
+* Organized Structure (Code-level)
+
+Never panic in library.
+
+- cmd/foo/main.go:
+.code nopanic/cmd/foo/main.go /func main/,/^}/
+
+- foo.go
+.code nopanic/foo.go /START OMIT/,/END OMIT/
+
+* Organized Structure (Code-level)
+
+- Formatting: just use gofmt, goimports or goreturns. Forget flame wars about whitespace characters.
+- Editor support: golint, go vet, gocode, godoc, godef, guru, go-outline, go-symbols, gorename, gopkgs, delve.
+
+* Easily Testable
+
+- Good code is when it can be tested well.
+- Avoid global state (should be always configurable, so tests can modify it).
+.code testing/global.go
+- Make everything configurable (ports, timeouts, paths).
+- Break down functionality into packages / functions, but DON'T overdo it.
+- Unittests for exported functions most often are enough.
+- Testing only integration / acceptance is NOT enough.
+- Interfaces: mocking points. But don't overdo.
+
+* Esily Testable
+
+.code testing/api.go /START OMIT/,/END OMIT/
+
+* Esily Testable
+
+.code testing/api_test.go /START OMIT/,/END OMIT/
+
+* Advanced Testing
+
+- Table Drive Tests
+- Test Fixtures
+- Golden Files
+- Networking
+- Benchmarks
+
+* Commenting
+
+* Resources
+
+- https://golang.org/doc/effective_go.html
+- https://github.com/golang/go/wiki/CodeReviewComments
+- http://peter.bourgon.org/go-best-practices-2016/
