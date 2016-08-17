@@ -1,0 +1,117 @@
+A little bit about Go Kit
+
+Paweł Slomka
+https://github.com/mycodesmells/gokit-example
+http://mycodesmells.com/post/little-bit-about-go-kit
+
+* What is Go Kit?
+
+Guys at SoundCloud (led by Peter Bourgon) wanted to make Golang popular for microservices.
+
+It was immature and was outplayed by Scala, Ruby, etc.
+
+The idea was to create a tool to wrap some business logic with a tool that allow logging, monitoring, etc.
+
+* Structure of a service
+
+.image res/onion.png 500 _
+
+* Example service
+
+.code ageStep0/service.go /ageService/,/^}/
+
+*Demo*
+
+	// start service
+	ageStep0
+
+	// make test request
+	ageStep0/test.sh
+
+* Adding Go Kit (1/2)
+
+It is based on wrapping services with _endpoints_:
+
+.code ageStep1/endpoint.go /makeCalculateAgeEndpoint/,/^}/
+
+* Adding Go Kit (2/2)
+
+Go Kit provides us with a http handler, which can be injected into `net/http` server:
+
+.code ageStep1/main.go /func main/,/^}/
+
+* Why?
+
+We got the same result, so why bother?
+
+- It's just the beginning of a long road.
+- Doing this with all services leads to common good practices
+
+For example, our service does not log anything. Generally we do want to know what is going on!
+
+* Logging middleware (1/2)
+
+We take an endpoint:
+- wrap it with log messages (note `defer` for logging _after_)
+- calling it with `next`
+
+.code ageStep2/logging.go /middleware/,/^}/
+
+* Logging middleware (2/2)
+
+
+*Demo*
+
+	// start service
+	ageStep2
+
+	// make test request
+	ageStep2/test.sh
+
+Not quite as useful as we were hoping, right?
+
+What about the parameters the endpoint (business logic) was called with?
+
+* Enhanced logging middleware (1/2)
+
+How about creating a middleware that takes our service as a parameter, then we can log both input and output:
+
+.code ageStep3/logging.go /loggingMiddleware/,/^}/
+.code ageStep3/logging.go /CalculateAge/,/^}/
+
+* Enhanced logging middleware (1/2)
+
+*Demo*
+
+	// start service
+	ageStep3
+
+	// make test request
+	ageStep3/test.sh
+
+Slightly more business-related work (we need to match out log template to input and output data), but it was definitely worth that two minutes.
+
+* What now?
+
+We can do a lot more:
+
+- additional monitoring
+- circuit breakers
+
+Components:
+
+- We can use HTTP, gRPC, Thrift, etc. for transport.
+- We can use service discovery (Consul, etcd, ZooKeeper, etc.)
+- We can use monitoring systems like Prometheus.
+
+Just pick your stack and propagate it to all your services to make it consistent and easy to manage.
+
+* Sources
+
+*Videos:*
+.link https://www.youtube.com/watch?v=aL6sd4d4hxk Peter Bourgon on Golang UK Conference 2015
+.link https://www.youtube.com/watch?v=1AjaZi4QuGo Peter Bourgon on GopherCon 2015
+
+*Other:*
+.link https://github.com/go-kit/kit GitHub repo
+.link https://gokit.io/ Website
