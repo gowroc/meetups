@@ -1,0 +1,238 @@
+Iris Web Framework
+
+Paweł Słomka
+pslomka@pslomka.com
+
+* What is Iris?
+
+It's a very young (*March*2016*) Golang web framework, described as _the_fastest_ one at the moment.
+
+.image img/benchmark-comparison.png 400 _
+
+* The Truth
+
+Not so pretty:
+
+- it's faster because of caching requests,
+- when requests are not cached, it's ca. 4 times slower
+
+Main advantages:
+
+- simple API,
+- looks good for people coming from NodeJS
+- quick start of web app development
+
+* Building blocks
+
+* Handling requests - API
+
+Easy functions for specific HTTP request types:
+
+    iris.Get("/", handleGet)
+    iris.Post("/", handlePost)
+    iris.Put("/", handlePut)
+    iris.Delete("/", handleDelete)
+
+
+To compare, handling a GET request with gorilla/mux is more complicated:
+
+    r := mux.NewRouter()
+    r.HandleFunc("/", handleGet).Methods("GET")
+
+* Handling requests - reading data from iris.Context
+
+It takes just one argument - `*iris.Context`. That Context provides us with lots of methods required for a proper request handling.
+
+    ...
+    Param(string) string
+    URLParam(string) string
+    RequestHeader(k string) string
+    ...
+
+* Handling requests - creating responses
+
+    ...
+    Redirect(string, ...int)
+    RedirectTo(string, ...interface{})
+    ...
+    Write(string, ...interface{})
+    HTML(int, string)
+    Render(string, interface{}, ...map[string]interface{}) error
+    Markdown(int, string)
+    JSON(int, interface{}) error
+    XML(int, interface{}) error
+    ServeFile(string, bool) error
+    ...
+
+* Middlewares
+
+Instead of having just one handler per path, we can create multiple _middlewares_. Each one can do a specific thing, eg. make auth checks, logging, etc., and move execution to the next with one with `Next()` function:
+
+    func authCheck(ctx *iris.Context) {
+        // make auth check
+        ctx.Next()
+    }
+    func logRequest(ctx *iris.Context) { ... }
+    func handleRequest(ctx *iris.Context) { ... }
+    ...
+    iris.Get("/", authCheck, logRequest, handleRequest)
+
+* Middlewares - passing data through
+
+    ...
+    type User struct {
+    	Name  string
+    	Roles []string
+    }
+    ...
+    func main() {
+    	iris.Get("/hi", initFn, handleGet)
+    	iris.Listen(":8000")
+    }
+
+    func initFn(ctx *iris.Context) {
+    	ctx.Set("user", User{"Go Wroc", []string{"Admin"}})
+    	ctx.Next()
+    }
+
+    func handleGet(ctx *iris.Context) {
+    	user := ctx.Get("user").(User)
+    	ctx.Write("Hello, %s (%s)", user.Name, user.Roles[0])
+    }
+
+* Examples
+
+* Serving static content
+
+Serving single file as a response:
+
+    ctx.ServeFile("./public/index.html", true)
+
+Serving a directory:
+
+    iris.Static("/", "./public", 0)
+
+Shortcut to serve whole app (`index.html`  + static resources):
+
+.code examples/static/main.go /main/,/^}/
+
+* Simple CRUD
+
+With shortcut functions it's easy to create a complete CRUD:
+
+    iris.Get("/people", GetAll(db))
+    iris.Get("/people/:id", Get(db))
+    iris.Post("/people/:id", Post(db))
+    iris.Delete("/people/:id", Delete(db))
+
+You can also use `iris.API(..)` - a struct that implements methods called `Get()`, `GetBy(ID)`, etc:
+
+    iris.API(SomeAPI{})
+
+
+    type SomeAPI struct {
+    	*iris.Context
+    }
+    func (u SomeAPI) Get() {}
+    func (u SomeAPI) GetBy(id string) {}
+    func (u SomeAPI) PostBy(id string) {}
+    func (u SomeAPI) DeleteBy(id string) {}
+    ...
+
+* Websockets
+
+Setting up WS is really simple:
+
+    iris.Config.Websocket.Endpoint = "/gowroc"
+    iris.Websocket.OnConnection(func(c iris.WebsocketConnection) {
+        c.Join("room")
+        c.On("message", func(message string) {
+            c.To("room").Emit("message", "From: "+c.ID()+": "+message)
+        })
+        c.OnDisconnect(func() {
+            fmt.Printf("\nConnection with ID: %s has been disconnected!", c.ID())
+        })
+    })
+
+But Iris introduces a specific message syntax...
+
+* Websockets - Front-End part
+
+When WS are enabled, our server hosts an utility script at `/iris-ws.js`. It's a wrapper over default WebSocket obeject, so that you comply to Iris' WS message syntax.
+
+Iris' message consists of six elements:
+    - constant message prefix (`go-websocket-message;`),
+    - event name,
+    - separator (`:`),
+    - message type (string, integer, boolean, JSON),
+    - separator (`:`),
+    - message content
+
+With `iris-ws.js`, all you need to do is
+
+    ws = new Ws(HOSTNAME + ENDPOINT_URL);
+    ws.Emit(EVENT, MESSAGE_CONTENT);
+
+It's a shame that we need to have a specific code at the client side...
+
+* Internationalization
+
+It's relatively easy to make your Iris app support multiple languages:
+
+    // main.go
+    iris.Use(i18n.New(i18n.Config{
+        Default: "en-US",
+        Languages: map[string]string{
+            "en-US": "./messages/en.ini",
+            "pl-PL": "./messages/pl.ini",
+        },
+        URLParameter: "lang",
+    }))
+
+    // en.ini
+    hello = Hello, %s!
+
+Using it later on is very simple as well:
+
+    message := ctx.GetFmt("translate")("hello", "GLUG Wrocław")
+    language := ctx.Get("language")
+
+    ctx.Write("%s (in %s)", message, language)
+
+* Basic authentication
+
+If you want to have your app exposed to the world (and want some basic level of security), you can use this neat line of code:
+
+    authentication := basicauth.Default(map[string]string{"user": "pass"})
+
+Then you just need to add it as a middleware to some protected pages, and you'll see a window (provided by your browser) that forces you to log in.
+
+    iris.Get("/secret", authentication, func(ctx *iris.Context) {
+        username := ctx.GetString("user")
+        ctx.Write("Hello authenticated user: %s ", username)
+    })
+
+* Panic recovery
+
+The worst thing about web application servers is what happens when some fatal error occurs. Should the app restart? Or maybe it should be aware of the `panic` and keep on living:
+
+    func main() {
+        iris.Use(recovery.Handler)
+        iris.Get("/", func(ctx *iris.Context) {
+            ctx.Write("Hi, let's panic")
+            panic("Don't worry, be happy!!")
+        })
+
+        iris.Listen(":8080")
+    }
+
+Cool, right?
+
+* Summary
+
+If you make lots of Web apps (or big ones), you may like Iris:
+- useful wrappers over `net/http` or even `gorilla/mux` solutions
+- middlewares to separate out common request handling logic
+- and more!
+
+Although it doesn't follow _do_it_yourself_ Golang pattern, you may find it more important to save time, especially with deadlines looming.
