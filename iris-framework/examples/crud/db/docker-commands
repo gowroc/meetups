@@ -1,0 +1,3 @@
+docker run --name some-postgres -e POSTGRES_PASSWORD=pass123 -d postgres
+
+docker run -it --rm --link some-postgres:postgres postgres psql -h postgres -U postgres

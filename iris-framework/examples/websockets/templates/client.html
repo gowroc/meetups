@@ -1,0 +1,23 @@
+<html>
+
+<head>
+    <title>My iris-ws</title>
+</head>
+
+<body>
+    <div id="messages" style="border-width:1px;border-style:solid;height:400px;width:375px;">
+
+    </div>
+    <input type="text" id="messageTxt" />
+    <button type="button" id="sendBtn">Send</button>
+    <script type="text/javascript">
+        var HOST = {{.Host}}
+    </script>
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" type="text/javascript"></script>
+    <!-- /iris-ws.js is served automatically by the server -->
+    <script src="/iris-ws.js" type="text/javascript"></script>
+    <!-- -->
+    <script src="js/chat.js" type="text/javascript"></script>
+</body>
+
+</html>
