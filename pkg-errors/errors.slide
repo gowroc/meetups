@@ -1,0 +1,158 @@
+Beyond standard errors package
+G.L.U.G. Wroclaw
+17 Nov 2016
+
+Pawel Słomka
+pslomka@pslomka.com
+http://mycodesmells.com
+@pawel_slomka
+
+* Agenda
+
+- Inspiration
+- Standard approaches to error handling
+- Alternative solution
+- Step-by-step comparison
+
+* Inspiration
+
+This talk is based on and inspired by Dave Cheney's talk at GopherCon 2016
+.link https://www.youtube.com/watch?v=lsBF58Q-DnY
+
+I've also published a blog post on this topic, approved by Mr Cheney himself:
+
+.image img/fame.png 400 _
+
+* Error definition
+
+To test and compare those approaches, let's create an error struct:
+
+.code ./src/common/common.go
+
+In our scenarios, we'd like to propagate this error from some innermost function to _the_top_ of the stack, to notify the user.
+
+* Approach #1 - return err
+
+First approach is to return an error as it is to the caller function:
+
+.code ./src/bare/bare.go
+
+* Approach #2 - fmt.Errorf
+
+Second, and probably the most popular, is to prefix error's message with some useful information and pass this newly created one further on:
+
+.code ./src/concat/concat.go
+
+* Alternative solution (1/2)
+
+Dave Cheney came with an alternative solution, which could be used without breaking your existing code. It relies on two important aspects:
+
+- explicit wrapping to extend an error without losing its context,
+- a `Cause()` to dig into an error to find what was the original problem
+
+* Alternative solution (2/2)
+
+.code ./src/wrap/wrap.go
+
+* Comparison (1/4) - Error message
+
+If we run those three solutions alongside each other, we might want to check what error message do we receive:
+
+    fmt.Printf("== %s ==\n", name)
+    fmt.Printf("Message: %v\n", err)
+
+Result:
+
+    == Bare == Message:
+    Errrrr: Error from CallC
+
+    == Concat == Message:
+    Error from CallA: Error from CallB: Errrrr: Error from CallC
+
+    == Wrap == Message:
+    Error from CallA: Error from CallB: Errrrr: Error from CallC
+
+* Comparison (2/4) - Error type
+
+What is the type of the error?
+
+    fmt.Printf("== %s ==\n", name)
+    fmt.Printf("Type: %T\n", err)
+
+Result:
+
+    == Bare ==
+    Type: common.MyError
+
+    == Concat ==
+    Type: *errors.errorString
+
+    == Wrap ==
+    Type: *errors.withStack
+
+* Comparison (3/4) - Original cause
+
+What is the original cause, type of the error?
+
+    fmt.Printf("== %s ==\n", name)
+    fmt.Printf("Original error? %v\n", errors.Cause(err))
+    fmt.Printf("Original type? %T\n", errors.Cause(err))
+
+Result:
+
+    == Bare ==
+    Original error? Errrrr: Error from CallC
+    Original type? common.MyError
+
+    == Concat ==
+    Original error? Error from CallA: Error from CallB: Errrrr: Error from CallC
+    Original type? *errors.errorString
+
+    == Wrap ==
+    Original error? Errrrr: Error from CallC
+    Original type? common.MyError
+
+* Comparison (4/4) - Stack trace (1/2)
+
+Do we have an access to the stack trace by any chance?
+
+We need to implement a `stackTracer` interface:
+
+    type stackTracer interface {
+        StackTrace() errors.StackTrace
+    }
+
+Then cast the error to it and print:
+
+    func printStack(err error) {
+        if err, ok := err.(stackTracer); ok {
+            for i, f := range err.StackTrace() {
+                fmt.Printf("%+s:%d", f, i)
+            }
+        } else {
+            fmt.Println("No stack trace...")
+        }
+    }
+    ...
+    fmt.Printf("== %s ==\n", name)
+    printStack(err)
+
+* Comparison (4/4) - Stack trace (2/2)
+
+Result:
+
+    == Bare ==
+    No stack trace...
+
+    == Concat ==
+    No stack trace...
+
+    == Wrap ==
+    github.com/mycodesmells/pkg-errors-example/wrap.CallA
+        /home/slomek/go/src/github.com/mycodesmells/pkg-errors-example/wrap/wrap.go:0main.main
+        /home/slomek/go/src/github.com/mycodesmells/pkg-errors-example/main.go:1runtime.main
+        /usr/local/go/src/runtime/proc.go:2runtime.goexit
+        /usr/local/go/src/runtime/asm_amd64.s:3
+
+
+* Questions?
