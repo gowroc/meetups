@@ -1,0 +1,56 @@
+Reverse Proxy with Letsencrypt
+G.L.U.G. Wroclaw
+17 Nov 2016
+
+Pawel Kowalak
+Shipwallet
+pawel@kowalak.cc
+
+* Thanks to Sponsors!
+
+.image img/ys.png
+.link https://www.youngskilled.com
+.image img/sw.png
+.link http://www.shipwallet.com/
+
+* What is Letsencrypt?
+
+Make it possible to set up an HTTPS server and have it automatically obtain a browser-trusted certificate, without any human intervention.
+
+- Challenge
+- Authorization
+- Issuance and revocation
+
+* Challenge
+
+Domain validation based on DNS or well-known URI.
+
+.image img/howitworks_challenge.png
+
+- Request challenge from letsencrypt.
+- Letsencrypt responds with challange rules.
+
+* Authorization
+
+.image img/howitworks_authorization.png
+
+- Put specified file with specified content on well-known path.
+- Sign message with our private key.
+- Letsencrypt checks signature and verifies well-known path.
+
+* Issuance and Revocation
+
+.image img/howitworks_certificate.png
+
+- Generate CSR, sign it with private key corresponding to CSR.
+- Sign CSR again with your domain private key.
+- Letsencrypt verifies signatures and issues / revokes a certificate.
+
+* Demo
+
+- Simple
+- Stage env
+- Cache
+- Reverse proxy
+- Load balancer
+- Valid certificate
