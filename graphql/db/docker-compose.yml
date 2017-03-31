@@ -1,0 +1,14 @@
+version: '3'
+services:
+    pq:
+        image: postgres:latest
+        ports:
+            - "15432:5432"
+        volumes:
+            - "./postgres.sql:/docker-entrypoint-initdb.d/postgres.sql"
+    mongo-seed:
+        build: ./mongo-seed
+    mongo:
+        image: mongo
+        ports:
+            - "27017:27017"
