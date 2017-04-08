@@ -1,0 +1,217 @@
+Composition patterns in Go
+
+Krzysztof Dryś
+Software Developer at shipwallet.com
+krzysztof@shipwallet.com
+krzysztofdrys@gmail.com
+
+* io.Writer composition
+
+.image Kulikov_Writer_E.N.Chirikov_1904.jpg 500 _
+
+.caption "io.Writer", Ivan Semenovich Kulikov, 1904, oil
+
+* io.Writer definition
+
+    // Writer is the interface that wraps the basic Write method.
+    //
+    // Write writes len(p) bytes from p to the underlying data stream.
+    // It returns the number of bytes written from p (0 <= n <= len(p))
+    // and any error encountered that caused the write to stop early.
+    // Write must return a non-nil error if it returns n < len(p).
+    // Write must not modify the slice data, even temporarily.
+    //
+    // Implementations must not retain p.
+    type Writer interface {
+    	Write(p []byte) (n int, err error)
+    }
+
+Writer eats `[]byte` and sometimes drops errors.
+
+* os.File
+
+    // File represents an open file descriptor.
+    type File struct {
+        *file // os specific
+    }
+
+`*File` is a `Writer`, so we can say that it eats `[]byte` and puts them
+to the disk (and sometimes drops errors).
+
+* gzip.NewWriter
+
+    // NewWriter returns a new Writer.
+    // Writes to the returned writer are compressed and written to w.
+    //
+    // It is the caller's responsibility to call Close on the WriteCloser when done.
+    // Writes may be buffered and not flushed until Close.
+    //
+    // Callers that wish to set the fields in Writer.Header must do so before
+    // the first call to Write or Close. The Comment and Name header fields are
+    // UTF-8 strings in Go, but the underlying format requires NUL-terminated ISO
+    // 8859-1 (Latin-1). NUL or non-Latin-1 runes in those strings will lead to an
+    // error on Write.
+    func NewWriter(w io.Writer) *Writer
+
+    // Note *gzip.Writer implements io.Writer
+
+gzip.NewWriter(w) is a Writer, which eats `[]byte`, compresses it and pushes it to `w`.
+
+* io.Multiwriter
+
+    // MultiWriter creates a writer that duplicates its writes to all the
+    // provided writers, similar to the Unix tee(1) command.
+    func MultiWriter(writers ...Writer) Writer
+
+io.MultiWriter(w1, w2, w3) is a Writer, which eats `[]byte`, and pushes it to `w1`, `w2` and `w3`.
+
+* Composition
+
+    w, _ := os.Open("test")
+    bb := &byte.Buffer{} // *bytes.Buffer{} is a io.Writer!
+    gw := io.MultiWriter(w, gzip.NewWriter(bb))
+
+`gw` eats `[]byte`, then:
+- compresses it and pushes it to file,
+- pushes is to memory.
+
+
+* General composition rules
+
+- break complex structures into small, manageable, replaceable and testable parts,
+- do one thing and do it well,
+- usually achieved using interfaces,
+- prefer small interfaces,
+- the smallest meaningful interface is a function.
+
+* Design patterns
+
+.image patterns.jpg 500 _
+
+.caption "Junior programmer tries to apply design patterns“ - Salvador Dalí, 1936, Oil on Canvas
+
+* http package
+
+    // A Handler responds to an HTTP request.
+    //
+    // ServeHTTP should write reply headers and data to the ResponseWriter
+    // and then return. Returning signals that the request is finished; it
+    // is not valid to use the ResponseWriter or read from the
+    // Request.Body after or concurrently with the completion of the
+    // ServeHTTP call.
+    //
+    // [...]
+    type Handler interface {
+        ServeHTTP(ResponseWriter, *Request)
+    }
+
+
+    // The HandlerFunc type is an adapter to allow the use of
+    // ordinary functions as HTTP handlers. If f is a function
+    // with the appropriate signature, HandlerFunc(f) is a
+    // Handler that calls f.
+    type HandlerFunc func(ResponseWriter, *Request)
+
+
+* Simple handler
+
+.code handlers/simple.go /START OMIT/,/END OMIT/
+
+.code server/v1.go
+
+* Handler composition: cache hash
+
+Client needs to know hash of cache. It is send in header of each request.
+
+.code handlers/commit.go /START OMIT/,/END OMIT/
+
+.code server/v2.go /START OMIT/,/END OMIT/
+
+* http.ResponseWriter decorator
+
+.code handlers/response_writer.go /START OMIT/,/END OMIT/
+
+* Handler composition: logging
+
+.code handlers/logging.go /START OMIT/,/END OMIT/
+
+* Handler composition: gzip
+
+.code handlers/gzip.go /START OMIT/,/END OMIT/
+
+* Handler composition: final
+
+.code server/v4.go /START OMIT/,/END OMIT/
+
+* Tips and tricks
+
+.image last_sprint.jpg _ 1000
+
+.caption "Last sprint before the deadline", Józef Chełmoński, 1881, Oil on Canvas
+
+* Avoid nesting
+
+This handler is tested very deep:
+
+.code server/v4.go /START OMIT/,/END OMIT/
+
+* Avoid nesting
+
+.code handlers/decorator.go /START OMIT/,/END OMIT/
+
+.code server/v6.go /START OMIT/,/END OMIT/
+
+* Use interfaces
+
+    type HandlerFunc func(ResponseWriter, *Request)
+- Decorator pattern is usable only for interfaces,
+- For most of the above decorators, it was critical that `ResponseWriter` is an interface as well,
+- "Accept interfaces, return structs"
+
+
+
+* Gotchas
+
+.image bug.jpg 500 _
+
+.caption "Developers looking for a bug", Jean-François Millet, 1857, Oil on canvas
+
+* Testing
+
+.code handlers/commit.go /START OMIT/,/END OMIT/
+
+Properties we need to check:
+- header was set,
+- handler was called with the proper arguments,
+- header was set before the write call.
+
+Writing test, which will check all of it, is not that simple.
+
+* Modularity
+
+.code handlers/logging.go /START OMIT/,/END OMIT/
+
+Interface is implemented. But our mental assertions might not be valid any more.
+
+Using normal writer we can a lot of data into the response. Now, we need to be careful, because response is stored in memory.
+
+* Modularity (2)
+
+What is broken here?
+
+.code handlers/gzip_flush.go /START OMIT/,/END OMIT/
+
+.code server/v5.go /START OMIT/,/END OMIT/
+
+* Performance
+
+.code handlers/recover.go /START OMIT/,/END OMIT/
+
+If using together with `WithLogging`, response is copied twice.
+
+
+* Summary
+
+- when interfaces are small, great stuff can happen,
+- decorate interfaces to have a modular software,
+- bugs and bad architecture can (and will) happen anyway.
