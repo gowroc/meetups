@@ -1,0 +1,146 @@
+System Calls
+What are System Calls and what are they good for?
+
+Grzegorz Żur
+grzegorz.zur@gmail.com
+
+
+* Motivation
+
+I use no computer to make a living, I switched to virtual machines.
+
+I wanted to speed up copying QEMU disk images (QCOW2 format) between slow devices.
+
+I already copied only changed blocks but I wanted it to be even faster.
+
+The Linux operating system comes to the rescue with *fallocate* and *fadvise* system calls.
+
+The *fallocate* call can make *sparse* *files*.
+
+: ls -l ; time cp a a ; time cp b b
+
+I just need to reach them in Go.
+
+
+* What are System Calls?
+
+In Linux and Unix, system calls are means of communication between a running program and the kernel. 
+
+System calls makes Application Binary Interface. You need no standard library, just use system calls correctly and you can do anything.
+
+C library wraps the calls into more useful, higher level functions. The C library is used by many programming languages.
+
+
+* How it works?
+
+Put arguments into processor registers and make an interrupt or use system call instruction.
+
+Context switch occurs and kernel takes over.
+
+
+* Example for x86
+
+.code syscalls/exit.s
+
+* Example for x86_64
+
+.code syscalls/write.s
+
+
+* How to use them in Go?
+
+There are 3 ways to do it. 
+
+
+* Assembly code
+
+.code syscalls/asm/pause.go /START/,/END/
+
+.code syscalls/asm/pause_linux_amd64.s
+
+The goroutines are no better than threads now.
+
+
+* C library
+
+.code syscalls/cgo/pause.go /START/,/END/
+
+
+The goroutines run fine but the executable is dynamically linked with C library.
+
+: say farewell to Alpine Linux as it uses μClibc
+
+
+* Syscall package
+
+.code syscalls/go/pause.go /START/,/END/
+
+
+- there are two packages
+- `syscall` is Go internal
+- we should use `golang.org/x/sys/unix` 
+- but we actually need both of them
+
+
+* Concurrency 
+
+Whenever you make a system call in C or any C library linked program, the process or thread freezes.
+
+Whenever you make a system call in Go or CGo the other goroutine runs.
+
+.link https://golang.org/src/runtime/proc.go
+.link https://golang.org/src/runtime/cgocall.go
+
+Goroutines are a new incarnation of multiprogramming, but now the CPU sharing happens in the process, not only in the operating system.
+
+: search for entersyscall and show usage in
+
+* Portability 
+
+Now we need to use build flags to and possibly write multiple versions.
+
+.link https://github.com/grzegorz-zur/minsync/blob/master/sparse_linux.go
+.link https://github.com/grzegorz-zur/minsync/blob/master/sparse.go
+
+
+* Issues
+
+- missing constants (bug 10599)
+- mixed up constants in `syscall` and `x/sys` packages
+- differences between Linux, BSD
+- differences between architectures
+
+.link https://github.com/golang/go/issues/10599
+
+
+* Documentation
+
+You should search for the information in operating system's documentation.
+
+- apropos
+- man
+- header files
+
+
+* Tools
+
+strace — tool tracing system calls and signals, it is a standard Linux tools and works on any binary
+
+: strace cp a a; strace cp b b;
+
+
+* Conclusions
+
+- use system calls in Go programs to get extra tools
+- use `golang.org/x/sys` package
+- goroutines still works fine
+- avoid system calls in assembler
+
+
+* Minsync 
+
+Minsync is a tool for synchronizing contents of large files to devices with differing read and write speeds. The tool will read both copies of a file and copy only differentiating blocks.
+
+The tool preserves existing and adds new holes in sparse files.
+
+.link https://github.com/grzegorz-zur/minsync
