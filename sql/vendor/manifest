@@ -1,0 +1,110 @@
+{
+	"version": 0,
+	"dependencies": [
+		{
+			"importpath": "github.com/gchaincl/dotsql",
+			"repository": "https://github.com/gchaincl/dotsql",
+			"vcs": "git",
+			"revision": "450d80a4d8f8cdd41842a1a3fe9ace90089c5e47",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/go-pg/pg",
+			"repository": "https://github.com/go-pg/pg",
+			"vcs": "git",
+			"revision": "fe3699c336cb7dbd24dca8ed9e0f1f3447f6b0f1",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/google/uuid",
+			"repository": "https://github.com/google/uuid",
+			"vcs": "git",
+			"revision": "6a5e28554805e78ea6141142aba763936c4761c0",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/jackc/pgx",
+			"repository": "https://github.com/jackc/pgx",
+			"vcs": "git",
+			"revision": "c16671e77e8a1e52a942a1b9c874121a946aa7a6",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/jinzhu/inflection",
+			"repository": "https://github.com/jinzhu/inflection",
+			"vcs": "git",
+			"revision": "1c35d901db3da928c72a72d8458480cc9ade058f",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/jmoiron/modl",
+			"repository": "https://github.com/jmoiron/modl",
+			"vcs": "git",
+			"revision": "99654d091ece9b281eec23c9e6fe9ff960e1baa1",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/jmoiron/sqlx",
+			"repository": "https://github.com/jmoiron/sqlx",
+			"vcs": "git",
+			"revision": "3564e3a314b957a161fefa0e7aea85b4d741c94e",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/lib/pq",
+			"repository": "https://github.com/lib/pq",
+			"vcs": "git",
+			"revision": "2704adc878c21e1329f46f6e56a1c387d788ff94",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/mattn/go-colorable",
+			"repository": "https://github.com/mattn/go-colorable",
+			"vcs": "git",
+			"revision": "ded68f7a9561c023e790de24279db7ebf473ea80",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/mattn/go-isatty",
+			"repository": "https://github.com/mattn/go-isatty",
+			"vcs": "git",
+			"revision": "fc9e8d8ef48496124e79ae0df75490096eccf6fe",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "github.com/pkg/errors",
+			"repository": "https://github.com/pkg/errors",
+			"vcs": "git",
+			"revision": "ff09b135c25aae272398c51a07235b90a75aa4f0",
+			"branch": "master",
+			"notests": true
+		},
+		{
+			"importpath": "golang.org/x/sys/unix",
+			"repository": "https://go.googlesource.com/sys",
+			"vcs": "git",
+			"revision": "9ccfe848b9db8435a24c424abbc07a921adf1df5",
+			"branch": "master",
+			"path": "/unix",
+			"notests": true
+		},
+		{
+			"importpath": "gopkg.in/inconshreveable/log15.v2",
+			"repository": "https://gopkg.in/inconshreveable/log15.v2",
+			"vcs": "git",
+			"revision": "b105bd37f74e5d9dc7b6ad7806715c7a2b83fd3f",
+			"branch": "master",
+			"notests": true
+		}
+	]
+}
