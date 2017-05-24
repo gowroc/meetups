@@ -1,0 +1,71 @@
+SQL in Go
+
+Krzysztof Dryś
+Software Developer at shipwallet.com
+krzysztof@shipwallet.com
+krzysztofdrys@gmail.com
+
+* Agenda
+
+- ORMs, `sql` package and middle ground,
+- `sql` package,
+- `sqlx` and `modl`,
+- a few other helpfull libraries.
+
+* ORMs
+
+.image img/hibernate.png 200 _
+.image img/ef.png 200 _
+
+* Enter go
+
+No ORM means you need to write:
+
+- migrations,
+- queries,
+- code for fetching entities referenced by foreign keys (1:N).
+
+* Enter go (2)
+
+Hibernate will manage all of this for you, in go you will need to write it manually:
+
+    @Entity @Table(name = "USER")
+    public class User {
+
+        @Id @GeneratedValue @Column(name = "USER_ID")
+        public Long getId() {
+            return this.id;
+        }
+
+        @Column(name = "NAME", nullable = false, length = 100)
+        public String getName() {
+            return this.name;
+        }
+
+        @OneToMany(cascade = CascadeType.ALL)
+        @JoinTable(name = "POST", joinColumns = { @JoinColumn(name = "USER_ID") }, inverseJoinColumns = { @JoinColumn(name = "POST_ID") })
+        public Set<Post> getPosts() {
+            return this.posts;
+        }
+
+
+        /* Some code was omitted was brevity, */
+    }
+
+* ORMs are not very popular in go
+
+Though some libraries claim to be ORMs, most of them are not.
+
+Reasons (personal opinion):
+- ORMs are not in the spirit of go,
+- ORMs heavily depend on reflection,
+- ORMs are complicated (it takes a lot of effort to write them).
+
+* You won't be using ORM, so lets be happy about it.
+
+- Entry cost will be much lower for newcomers,
+- You will learn SQL,
+- You will utilize your DB to the fullest.
+
+* sql package
+
