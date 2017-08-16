@@ -1,0 +1,301 @@
+Playing unsafe with slices and strings
+
+Krzysztof Dryś
+Software Developer at shipwallet.com
+krzysztof@shipwallet.com
+krzysztofdrys@gmail.com
+
+* Agenda
+
+- Learn a little about unsafe package,
+- Learn a little about go runtime,
+- Make sure everyone understand slices and strings,
+- Have fun (benchmarks!),
+- Pictures are from xkcd.com.
+
+* unsafe.Pointer
+
+.image img/pointers.png 500 _
+
+.caption  Every computer, at the unreachable memory address 0x-1, stores a secret. I found it, and it is that all humans ar—SEGMENTATION FAULT.
+
+* unsafe.Pointer
+
+Pointer represents a pointer to an arbitrary type. There are four special operations available for type Pointer that are not available for other types:
+
+- A pointer value of any type can be converted to a Pointer.
+- A Pointer can be converted to a pointer value of any type.
+- A uintptr can be converted to a Pointer.
+- A Pointer can be converted to a uintptr.
+
+Pointer therefore allows a program to defeat the type system and read and write arbitrary memory. It should be used with extreme care.
+
+* unsafe.Pointer 
+
+(1) Conversion of a *T1 to Pointer to *T2.
+
+Provided that T2 is no larger than T1 and that the two share an equivalent memory layout, this conversion allows reinterpreting data of one type as data of another type.
+
+.play unsafe_int_64/main.go
+
+* unsafe.Pointer
+
+Provided that T2 is *no* *larger* *than* T1 and that the two share an equivalent memory layout, this conversion allows reinterpreting data of one type as data of another type.
+
+.play unsafe_int_64_2/main.go
+
+* Arrays
+
+An array is a numbered sequence of elements of a single type with a fixed length.
+
+`[3]int32` is just three `int32`'s next to each other.
+
+.play unsafe_3int/main.go
+
+* Arrays
+
+Today I learned: both `[3]int32` and `*[3]int32` are indexable.
+
+.play -edit arrays/main.go
+
+* Undefined behaviour
+
+.image img/compiler_complaint.png 250 _
+
+.caption Checking whether build environment is sane... build environment is grinning and holding a spatula. Guess not.
+
+* Undefined behaviour
+
+Undefined behaviour is undefined. Here be dragons.
+
+.play -edit unsafe_int_64_3/main.go
+
+* Random thoughts: there are two ways to iterate an array
+
+.play -edit arrays_iteration/main.go
+
+* Slices
+
+.image img/donald_knuth.png 500 _
+
+.caption His books were kinda intimidating; rappelling down through his skylight seemed like the best option.
+
+* Slice
+
+src/runtime/slice.go:
+
+    type slice struct {
+        array unsafe.Pointer
+        len   int
+        cap   int
+    }
+
+src/reflect/value.go:
+
+    // SliceHeader is the runtime representation of a slice.
+    // It cannot be used safely or portably and its representation may
+    // change in a later release.
+    // Moreover, the Data field is not sufficient to guarantee the data
+    // it references will not be garbage collected, so programs must keep
+    // a separate, correctly typed pointer to the underlying data.
+    type SliceHeader struct {
+        Data uintptr
+        Len  int
+        Cap  int
+    }
+  
+* src/runtime/slice.go
+
+This is how make([]byte, 10, 20) works (sort of):
+
+.code -numbers _makeslice.go
+
+* Example: slicing
+
+.play -numbers -edit slices_slicing/main.go
+
+* Puzzle time!
+
+What will this code print?
+- [1],
+- [2],
+- it will panic.
+
+.play -numbers -edit slices_puzzle_append_1/main.go
+
+* Understanding append
+
+.play -numbers -edit slices_append_iteration/main.go
+
+* DIY append
+
+.play -numbers -edit slices_append_diy/main.go /START OMIT/,/END OMIT/
+
+* Example: copy "in place"
+
+.play -numbers -edit slices_slicing_append/main.go /START OMIT/,/END OMIT/
+
+* Example: copy "in place"
+
+.play -numbers -edit slices_slicing_append/main.go /START OMIT/,/END OMIT/
+
+src/encoding/json/stream.go:
+
+    // UnmarshalJSON sets *m to a copy of data.
+    func (m *RawMessage) UnmarshalJSON(data []byte) error {
+        if m == nil {
+            return errors.New("json.RawMessage: UnmarshalJSON on nil pointer")
+        }
+        *m = append((*m)[0:0], data...)
+        return nil
+    }
+
+* Example: copy "in place"
+
+.play -numbers -edit slices_slicing_append/main.go /START OMIT/,/END OMIT/
+
+Question: what can go wrong?
+
+* Iterating slices
+
+Lets make sure that everyone is aware, that this is a mistake:
+
+.play -numbers -edit slices_iteration/main.go
+
+* Random thoughts: []User vs []*User
+
+I prefer `[]User`. Hoverer, lets look at this code:
+
+    for _, u := range users {
+        u.Password = NewPassword()
+    }
+
+* Random thoughts: []User vs []*User
+
+I prefer `[]User`. Hoverer, lets look at this code:
+
+    for _, u := range users {
+        u.Password = NewPassword()
+    }
+
+If `users` is of type `[]User` it is (1) slower and (2) incorrect.
+
+
+* Random thoughts: []User vs []*User
+
+I prefer `[]User`. Hoverer, lets look at this code:
+
+    for _, u := range users {
+        u.Password = NewPassword()
+    }
+
+If `users` is of type `[]User` it is (1) slower and (2) incorrect.
+
+I will show you benchmarks soon.
+
+* Random thoughts: there are two ways to iterate a slice
+
+.play -edit slices_iteration_two_ways/main.go
+
+* Random thoughts: there are two ways to iterate a slice
+
+.play -edit slices_iteration_two_ways_slicing/main.go /START OMIT/,/END OMIT/
+
+* Benchmarks
+
+With a little bit of luck, that is.
+
+* Strings
+
+.image img/duty_calls.png 500 _
+
+.caption What do you want me to do? LEAVE? Then they'll keep being wrong!
+
+* String structure
+
+src/runtime/string.go:
+
+    type stringStruct struct {
+        str unsafe.Pointer
+        len int
+    }
+
+src/reflect/value.go:
+
+    // StringHeader is the runtime representation of a string.
+    // It cannot be used safely or portably and its representation may
+    // change in a later release.
+    // Moreover, the Data field is not sufficient to guarantee the data
+    // it references will not be garbage collected, so programs must keep
+    // a separate, correctly typed pointer to the underlying data.
+    type StringHeader struct {
+        Data uintptr
+        Len  int
+    }
+
+* Byte slice to string
+
+.play -numbers -edit slice_to_string/main.go /START OMIT/,/END OMIT/
+
+* Byte slice to string (UTF-8)
+
+.play -numbers -edit slice_to_string_unicode/main.go /START OMIT/,/END OMIT/
+
+* There are mutable strings in go, after all
+
+.play -numbers -edit slice_to_string_problems/main.go /START OMIT/,/END OMIT/
+
+* Package is called unsafe for a reason
+
+What will be printed?
+
+.play -edit slice_to_string_problems_map/main.go /START OMIT/,/END OMIT/
+
+* Package is called unsafe for a reason
+
+What will be printed?
+
+.play -edit slice_to_string_problems_map_2/main.go /START OMIT/,/END OMIT/
+
+* String to byte slice
+
+.play -edit string_to_slice_panic/main.go /START OMIT/,/END OMIT/
+
+* String to byte slice (2)
+
+.play -edit string_to_slice_no_panic/main.go /START OMIT/,/END OMIT/
+
+* Byte slice to string, done by real professionals
+
+.code -numbers _slicebytetostring.go
+
+* How string are made?
+
+.code -numbers _rawstring.go
+
+Used by:
+- string concatenation,
+- `string([]byte)` cast,
+- `string([]rune)` cast.
+
+* More benchmarks
+
+* Summary
+
+- slice is:
+
+    type SliceHeader struct {
+        Data uintptr
+        Len  int
+        Cap  int
+    }
+
+- `string` is something similar, but no `Cap`,
+
+- `append` is a buildin function, because there are no generics in go,
+
+- at the same time `append` is quite powerfull (github.com/golang/go/wiki/SliceTricks),
+
+- iteration has corner cases, but 99.9% time you will be fine.
+
+
