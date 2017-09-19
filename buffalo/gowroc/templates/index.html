@@ -1,0 +1,42 @@
+<header>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-2 col-sm-6 col-xs-6 logo">
+        <a href="<%= rootPath() %>"><img class="logo__image" src="<%= rootPath() %>assets/images/gowroc.jpeg" alt=""></a>
+      </div>
+      <div class="col-md-10 col-sm-6 col-xs-6 titles">
+        <h1>GoWroc Blog</h1>
+        <h3>
+          Live coding session, September 21st 2017
+        </h3>
+        <div class="foot"> <span> Powered by <a href="http://gobuffalo.io/">gobuffalo.io</a></span> </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="row">
+  <div class="col-md-12">
+    <div class="subtitle">
+      <div class="container">
+        <h3>Latest posts:</h3>
+      </div>
+    </div>
+    <div class="col-md-12 posts-list">
+      <%= for (p) in posts { %>
+        <div class="posts-list__item blog-post">
+          <div class="blog-post__meta">
+            <h3><%= p.Title %></h3>
+            <div class="blog-post__date"><%= p.CreatedAt.Format("2006-01-02 15:06") %></div>
+          </div>
+          <div class="blog-post__abstract">
+              <%= markdown(p.Abstract) %>
+          </div>
+          <div class="blog-post__read-more">
+            <a href="/p/<%= p.ID %>">Read more</a>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</div>
