@@ -1,0 +1,18 @@
+Giving examples in Go
+
+Krzysztof Dryś
+Software Developer at shipwallet.com
+krzysztof@shipwallet.com
+krzysztofdrys@gmail.com
+
+* Welcome to the first talk in TIFOITAMC(AUF) series
+
+* TIFOITAMC(AUF)
+
+Things I find on Internet to amuse my coworkers (and usually fail).
+
+* Giving examples in Go
+
+* Example from my previous presentation
+
+.play ./example/main.go
