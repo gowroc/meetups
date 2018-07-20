@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package twirp.gowroc.warehouse;
+option go_package = "warehouse";
+
+// Warehouse
+service Warehouse {
+  // GetOrders
+  rpc GetOrders(GetOrdersReq) returns (GetOrdersResp);
+}
+
+message GetOrdersReq {
+    string status = 1;
+}
+
+message GetOrdersResp {
+    repeated Order orders = 1;
+}
+
+message Order {
+  int32 id = 1;
+  string type = 2;
+  string status = 3;
+}
