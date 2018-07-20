@@ -1,0 +1,97 @@
+Twirp - getting started
+
+Sebastian Ławniczak
+sebastian@ingrid.com
+
+* Agenda
+- What's twirp
+- Code generation
+- Routing
+- Errors
+- Server hooks
+- Example service
+
+* What's twirp
+
+- [[http://github.com/twitchtv/twirp][github.com/twitchtv/twirp]]
+- RPC framework
+- uses protobufs and json for serialization
+- code generation for client & server stubs
+
+* Installation
+
+ `go get -u github.com/golang/protobuf/protoc-gen-go`
+ `go get -u github.com/twitchtv/twirp/protoc-gen-twirp`
+
+- Swagger
+ `go get -u github.com/elliots/protoc-gen-twirp_swagger`
+
+* Code generation
+
+ `protoc --proto_path=$GOPATH/src:. --twirp_out=. --go_out=. ./rpc/example/service.proto`
+
+- with swagger generation
+
+ `protoc --proto_path=$GOPATH/src:. --twirp_out=. --go_out=. --twirp_swagger_out=. ./rpc/example/service.proto`
+
+* Routing
+
+Twirp protocol (5.0)
+
+- works with HTTP/1.1 and HTTP/2 
+- every request is HTTP POST
+- supports JSON and Protobuf communication (based on Content-Type header)
+
+ `<base URL> /twirp/ <package> . <service> / <method>`
+
+e.g.
+ 
+ `localhost:8080/twirp/echoer.Echo/Hello`
+
+* Routing
+
+Twirp protocol (6.0)
+
+- add support for HTTP streaming
+- remove /twirp/ prefix
+
+ `<base URL> / <user prefix> / <package> . <service> / <method>`
+
+e.g.
+ 
+ `localhost:8080/user_prefix/echoer.Echo/Hello`
+
+* Errors
+
+- twirp extends standard Go's error
+- errors are always returned as JSON with fields:
+    - code: one of the Twirp error codes as a string.
+    - msg: a human-readable message describing the error as a string.
+    - meta: a map with additional metadata describing the error.
+
+.code code/err_impl.go
+
+- helpers: 
+   `func NewError(code ErrorCode, msg string) Error`
+   `func InvalidArgumentError(argument string, validationMsg string) Error`
+   `func InternalError(msg string) Error`
+   `func InternalErrorWith(err error) Error`
+ 
+
+
+* Errors
+
+.code code/err_interface.go
+
+* Server hooks
+
+- enabled by passing `*twirp.ServerHooks` struct to server constructor
+ `func NewExampleServer(svc Example, hooks *twirp.ServerHooks) http.Handler`
+
+- hooks are fired at different stages of handling request
+
+* Server hooks
+
+.code code/hooks.go
+
+* Example service
