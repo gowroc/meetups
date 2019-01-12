@@ -1,0 +1,127 @@
+Building cli tools with cobra
+
+Tobiasz Heller
+Ingrid
+https://github.com/nephe
+
+
+* What is Cobra?
+.image res/cobra.png 300 _
+.link http://github.com/spf13/cobra github.com/spf13/cobra
+"Cobra is both a library for creating powerful modern CLI applications as well as a program to generate applications and command files."
+
+
+* When flag package is not enough?
+
+.code stdflag/main.go /main/,/^}/
+
+* Features
+- Easy subcommand-based CLIs:
+    app server, app fetch, app ...
+- Global, local and cascading flags
+- Code generation:
+    cobra init & cobra add cmdname
+- Intelligent suggestions (app srver... did you mean app server?)
+- Automatic help generation (and recognition of -h, --help) for commands and flags
+- Automatically generated bash autocomplete for your application
+- Optional integration with viper
+
+
+
+* App structure
+
+	cobra init
+
+: 
+
+	appname/
+			cmd/
+				root.go
+				hello.go
+			main.go
+
+*main.go*
+.code demoapp/main.go /main/,/^}/
+
+
+* cmd/root.go
+.code demoapp/cmd/root.go /rootCmd/,
+
+* New subcommand
+	cobra add hello
+.code demoapp/cmd/hello.go /hello/,
+
+* Run & RunE
+
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("hello called")
+	},
+
+: 
+
+	RunE: func(cmd *cobra.Command, args []string) error {
+		something, err := someFunc()
+		if err != nil {
+			return err
+		}
+	},
+
+* Flags local & persistent
+
+.code demoapp/cmd/get.go /get/,
+
+	$  go run main.go get
+	get called with all flag: false and default output
+
+: 
+
+	$  go run main.go get --all=true --output=json
+	get called with all flag: true and json output
+
+* Pods subcommand
+
+.code demoapp/cmd/pods.go /pods/,
+
+	$  go run main.go get pods --all=true
+	Error: unknown flag: --all
+
+: 
+
+	$  go run main.go get pods --output=json
+	pods called
+
+* Args
+
+	MinimumNArgs(int),MaximumNArgs(int),ExactArgs(int)
+
+: 
+
+	var sub1Cmd = &cobra.Command{
+		Use: "sub1",
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(args[0])
+		},
+	}
+
+* Demo 
+
+* Conclusion
+
+* Who is using it
+
+- Docker
+- Kubernetes
+- Hugo
+- CockroachDB
+- Ingrid
+
+* Sources
+
+*Documentation:*
+.link http://github.com/spf13/cobra github.com/spf13/cobra
+
+*Videos:*
+.link https://www.youtube.com/watch?v=WvWPGVKLvR4 justforfunc: CLI tools with Cobra
+
+
