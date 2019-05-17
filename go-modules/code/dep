@@ -1,0 +1,11 @@
+$ dep init
+$ ls
+Gopkg.toml Gopkg.lock vendor/
+
+$ dep ensure -add github.com/foo/bar
+
+$ dep status
+PROJECT             CONSTRAINT     VERSION        REVISION  LATEST   PKGS USED
+github.com/foo/bar  branch master  branch master  6f8212e   30dba43  1
+
+$ dep ensure -update github.com/foo/bar
