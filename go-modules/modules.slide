@@ -1,0 +1,200 @@
+Introduction to Go modules
+
+16 May 2019
+
+Sebastian Ławniczak
+sebastian@ingrid.com
+@seblw
+
+* Agenda
+- How it looked like before
+- dep - "official experiment"
+- Go modules
+- Starting a new project
+- Migration of existing code to Go modules
+
+* How it looked like before
+
+- Go 1.0: no dependency management at all, just GOPATH
+
+- godep - first attempt to solve reproducible builds problem
+
+- Go 1.5: introduction of vendor (`GO15VENDOREXPERIMENT` variable)
+
+- Lots of new tools: govendor, glide, gvt, etc...
+
+- Go 1.9: dep comes in as an “official experiment”.
+
+* Dep
+
+- Gopkg.toml and Gopkg.lock; vendor
+- Basic workflow
+
+.code code/dep
+
+* Dep vs vgo
+
+- In early 2018 Russ Cox publish a series of articles about “Go & Versioning” [1]
+- Russ’ work resulted in another tool: vgo
+- The announcement caused strong discussion in Go community [2], [3]
+  
+[1] https://research.swtch.com/vgo
+[2] https://sdboyer.io/blog/vgo-and-dep/
+[3] https://peter.bourgon.org/blog/2018/07/27/a-response-about-dep-and-vgo.html
+
+* Go modules
+
+- Go 1.11 introduces experimental support for Go modules [1]
+- GO111MODULE variable is used to define behaviour of the Go toolchain
+- Available options:
+    - off: modules disabled
+    - auto: modules enabled outside GOPATH (default)
+    - on: modules enabled 
+- Go 1.13 (August ’19) will enable modules by default and deprecate GOPATH-based projects workflow.
+- Modules are stored in `$GOPATH/pkg/mod`
+
+[1] https://github.com/golang/proposal/blob/master/design/24301-versioned-go.md
+
+* Go modules
+
+- Go module is a group of packages that share a common prefix (path) and are versioned as a single unit. 
+- Version control is handled by semantic versioning.
+- Example of go.mod: 
+.code code/go.mod
+
+* Semantic Versioning
+
+.image img/semver.png
+
+source: https://blog.donbowman.ca/2019/01/04/another-cloud-suicide-cloud-lessons-on-pinning-and-semver-and-ci/
+
+* Semantic Versioning
+
+.image img/semver_rant.png 500 1050
+source: https://twitter.com/davidcrawshaw/status/1096186928037269504
+
+* Minimal Version Selection
+
+- An idea that Russ Cox proposed for how to resolve dependencies
+- MVS always selects the minimal (oldest) module version that satisfies the overall requirements of a build
+- https://research.swtch.com/vgo-mvs
+
+.image img/mvs.png 350 600
+
+* Proxy servers
+
+- Go now has ability to use proxy servers as a cache for modules
+- `GOPROXY` (Go 1.11)
+
+- Security matters - Go checksum database [1]
+- `GOSUMDB` (Go 1.13)
+
+[1] https://go.googlesource.com/proposal/+/master/design/25530-sumdb.md
+
+* The Athens Project
+- Host your own instance!
+- https://docs.gomods.io/try-out/
+- https://github.com/gomods/athens
+
+.image img/athens.png 400 700
+
+* Google's proxy server
+
+- Google just announced their Go modules mirror server: `index.golang.org/index`
+- Relevant environment variables:
+    GOPROXY = https://proxy.golang.org
+    GOSUMDB = https://sum.golang.org
+
+* Starting a new project
+
+- Create a module
+    $ go mod init github.com/foo/bar
+
+- Add new dependency
+    $ go get golang.org/x/text (latest)
+
+    $ go get golang.org/x/text@v0.3.0
+
+- Build
+    $ go build
+    go: finding github.com/foo/bar v1.0.1
+    go: downloading github.com/foo/bar v1.0.1
+    go: extracting github.com/foo/bar v1.0.1
+
+- Remove unused dependencies
+    $ go mod tidy
+
+* Updating dependencies
+
+- List current module dependencies
+    $ go list -m all
+    github.com/foo/bar 
+    github.com/gorilla/context v1.1.1
+    github.com/gorilla/mux v1.7.1
+
+- List available versions of module
+    $ go list -m -versions github.com/gorilla/mux
+    github.com/gorilla/mux v1.2.0 v1.3.0 v1.4.0 [...]
+
+- Update a dependency 
+    go get -u github.com/gorilla/mux@x.y.z      # changes release of specific dependency (x.y.z)
+    go get -u           # updates minor and patch release (1.y.z) for all deps
+    go get -u=patch     # updates patch release (1.0.z) for all deps
+
+- Run tests for all dependencies
+    go test all
+
+* Working with Git tags
+
+- Create new tag
+    $ git tag v1.0.0
+    $ git push --tags
+
+- List tags
+    $ git tag
+    v1.0.0
+    v1.1.0
+    v2.0.0
+
+- Checkout on tag
+    $ git checkout v1.1.0
+
+* Migrating to modules
+
+- go.mod can be automatically generated from all existing solutions like dep etc.
+
+- Workflow stays the same.
+    $ go mod init
+    go: creating new go.mod: module github.com/acme/stuff
+    go: copying requirements from Gopkg.lock
+
+* Using vendor for storing modules 
+
+- You can dump changes to vendor/ after each update of dependencies
+    $ go mod vendor
+
+- Build and test your code using vendor (e.g. in CI)
+    $ go build -mod=vendor
+
+    $ go test -mod=vendor
+
+* Handling breaking changes
+
+- Every breaking change requires us to increment MAJOR version number
+- Convention requires to put MAJOR number at the end of module prefix, e.g.:
+    github.com/foo/bar/v2
+- All imports in v2 needs to be adjusted: 
+    github.com/foo/bar/pkg -> github.com/foo/bar/v2/pkg 
+- Renaming sounds boring? https://github.com/marwan-at-work/mod
+
+.image img/mod_screen.png 220 1050
+
+* Handling breaking changes
+
+- Major branch
+.image img/v2_major_branch.png 500 800
+
+* Handling breaking changes
+
+- Subdirectories
+.image img/v2_subdirs.png 450 500
